@@ -74,7 +74,7 @@ const DECISION_CONFIG = {
 
 export function ResultCard({ result }: ResultCardProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const cfg = DECISION_CONFIG[result.decision];
+  const cfg = DECISION_CONFIG[result.decision?.toLowerCase() as keyof typeof DECISION_CONFIG] || DECISION_CONFIG.review;
 
   useEffect(() => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -93,7 +93,7 @@ export function ResultCard({ result }: ResultCardProps) {
         style={{
           padding: '20px 28px',
           background: 'var(--bg-card)',
-          border: `1px solid ${cfg.border}`,
+          border: `1px solid ${cfg?.border || "#ccc"}`,
           borderBottom: 'none',
           borderRadius: '12px 12px 0 0',
           display: 'flex',
@@ -132,7 +132,7 @@ export function ResultCard({ result }: ResultCardProps) {
               style={{
                 padding: '3px 12px',
                 background: cfg.bg,
-                border: `1px solid ${cfg.border}`,
+                border: `1px solid ${cfg?.border || "#ccc"}`,
                 borderRadius: 20,
                 fontSize: 11,
                 fontWeight: 800,
@@ -185,8 +185,8 @@ export function ResultCard({ result }: ResultCardProps) {
                 result.risk_score < 35
                   ? 'var(--success)'
                   : result.risk_score < 60
-                  ? 'var(--warning)'
-                  : 'var(--danger)',
+                    ? 'var(--warning)'
+                    : 'var(--danger)',
               letterSpacing: '-0.04em',
               lineHeight: 1,
             }}
@@ -203,7 +203,7 @@ export function ResultCard({ result }: ResultCardProps) {
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           background: 'var(--bg-secondary)',
-          border: `1px solid ${cfg.border}`,
+          border: `1px solid ${cfg?.border || "#ccc"}`,
           borderTop: `1px solid var(--border)`,
           borderBottom: 'none',
         }}
@@ -263,8 +263,8 @@ export function ResultCard({ result }: ResultCardProps) {
                 color: item.danger
                   ? 'var(--danger)'
                   : item.accent
-                  ? 'var(--accent)'
-                  : 'var(--text-primary)',
+                    ? 'var(--accent)'
+                    : 'var(--text-primary)',
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
               }}
@@ -281,7 +281,7 @@ export function ResultCard({ result }: ResultCardProps) {
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 0,
-          border: `1px solid ${cfg.border}`,
+          border: `1px solid ${cfg?.border || "#ccc"}`,
           borderRadius: '0 0 12px 12px',
           overflow: 'hidden',
         }}
@@ -370,7 +370,7 @@ export function ResultCard({ result }: ResultCardProps) {
         </svg>
         GPS verified:{' '}
         <code style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
-          {result.location.lat.toFixed(6)}, {result.location.lng.toFixed(6)}
+          {result.location?.lat?.toFixed(6) ?? "N/A"}, {result.location?.lng?.toFixed(6) ?? "N/A"}
         </code>
         {result.location.accuracy && (
           <span style={{ marginLeft: 4 }}>

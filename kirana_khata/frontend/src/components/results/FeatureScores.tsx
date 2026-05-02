@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { FeatureScore } from '../../types/underwriting';
 
 interface FeatureScoresProps {
-  scores: FeatureScore[];
+  scores?: FeatureScore[]; // 🔥 made optional
 }
 
 function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
@@ -32,8 +32,8 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
     score.score >= 75
       ? 'var(--success)'
       : score.score >= 55
-      ? 'var(--accent)'
-      : 'var(--danger)';
+        ? 'var(--accent)'
+        : 'var(--danger)';
 
   const grade =
     score.score >= 80 ? 'A' : score.score >= 65 ? 'B' : score.score >= 50 ? 'C' : 'D';
@@ -49,7 +49,6 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
         animation: `fadeIn 0.5s ease ${delay}ms both`,
       }}
     >
-      {/* Grade badge */}
       <div
         style={{
           width: 28,
@@ -70,13 +69,11 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
         {grade}
       </div>
 
-      {/* Name + bar */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
             marginBottom: 5,
           }}
         >
@@ -84,34 +81,26 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
             style={{
               fontSize: 12,
               color: 'var(--text-secondary)',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
             }}
           >
-            {score.label}
+            {score.label || score.name}
           </span>
           <span
             style={{
               fontSize: 13,
               color,
               fontWeight: 700,
-              fontFamily: 'Syne, sans-serif',
-              marginLeft: 8,
-              flexShrink: 0,
             }}
           >
             {animated}
           </span>
         </div>
-        {/* Track */}
+
         <div
           style={{
             height: 5,
             background: 'var(--bg-elevated)',
             borderRadius: 3,
-            overflow: 'hidden',
           }}
         >
           <div
@@ -120,29 +109,19 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
               width: `${animated}%`,
               background: `linear-gradient(90deg, ${color}80, ${color})`,
               borderRadius: 3,
-              transition: 'width 0.05s linear',
-              boxShadow: `0 0 6px ${color}50`,
             }}
           />
         </div>
       </div>
 
-      {/* Weight */}
-      <div
-        style={{
-          width: 36,
-          textAlign: 'right',
-          flexShrink: 0,
-        }}
-      >
+      <div style={{ width: 36, textAlign: 'right' }}>
         <span
           style={{
             fontSize: 10,
             color: 'var(--text-muted)',
-            fontWeight: 600,
           }}
         >
-          ×{score.weight.toFixed(2)}
+          ×{score.weight?.toFixed(2) ?? "0.00"}
         </span>
       </div>
     </div>
@@ -150,8 +129,13 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
 }
 
 export function FeatureScores({ scores }: FeatureScoresProps) {
-  const weighted = scores.reduce(
-    (acc, s) => acc + s.score * s.weight,
+
+  // 🔥 SAFE FALLBACK
+  const safeScores = scores ?? [];
+
+  // 🔥 NO CRASH
+  const weighted = safeScores.reduce(
+    (acc, s) => acc + (s.score ?? 0) * (s.weight ?? 0),
     0
   );
 
@@ -160,95 +144,26 @@ export function FeatureScores({ scores }: FeatureScoresProps) {
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 16,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-          <span
-            style={{
-              fontFamily: 'Syne, sans-serif',
-              fontWeight: 600,
-              fontSize: 14,
-              color: 'var(--text-primary)',
-            }}
-          >
-            Feature Scores
-          </span>
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-muted)',
-          }}
-        >
-          Weighted avg:{' '}
-          <span
-            style={{
-              color: 'var(--accent)',
-              fontWeight: 700,
-            }}
-          >
-            {weighted.toFixed(1)}
-          </span>
-        </div>
+        <span style={{ fontWeight: 600 }}>Feature Scores</span>
+        <span>
+          Weighted avg:{" "}
+          <b>{safeScores.length ? weighted.toFixed(1) : "N/A"}</b>
+        </span>
       </div>
 
-      {/* Header row */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          padding: '0 0 8px 0',
-          borderBottom: '1px solid var(--border-bright)',
-          marginBottom: 2,
-        }}
-      >
-        <div style={{ width: 28, flexShrink: 0 }} />
-        <div
-          style={{
-            flex: 1,
-            fontSize: 10,
-            color: 'var(--text-muted)',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}
-        >
-          Signal
+      {safeScores.length === 0 ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+          No feature scores available
         </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: 'var(--text-muted)',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            width: 36,
-            textAlign: 'right',
-          }}
-        >
-          Wt.
-        </div>
-      </div>
-
-      {scores.map((s, i) => (
-        <ScoreBar key={s.name} score={s} delay={i * 80} />
-      ))}
+      ) : (
+        safeScores.map((s, i) => (
+          <ScoreBar key={s.name || i} score={s} delay={i * 80} />
+        ))
+      )}
     </div>
   );
 }

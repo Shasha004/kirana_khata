@@ -24,12 +24,12 @@ export async function submitUnderwrite(
       throw new Error("Please upload all 5 required images");
     }
 
-    // 🔥 Image mapping
-    formData.append("storefront", req.images[0]);
-    formData.append("interior_wide", req.images[1]);
-    formData.append("shelf_close", req.images[2]);
-    formData.append("billing_area", req.images[3]);
-    formData.append("signage", req.images[4]);
+    // 🔥 Image mapping (must match backend /underwrite params)
+    formData.append("front", req.images[0]);
+    formData.append("billing_area", req.images[1]);
+    formData.append("left_wall", req.images[2]);
+    formData.append("centre_wall", req.images[3]);
+    formData.append("right_wall", req.images[4]);
 
     // 🔥 GPS
     formData.append("lat", req.gps.lat.toString());
@@ -53,8 +53,26 @@ export async function submitUnderwrite(
     // 🔥 NORMALIZATION LAYER
     // ==============================
 
-    // ✅ Fix decision casing
-    const decision = (output.decision || "review").toLowerCase();
+    // ✅ Decision: pipeline returns APPROVE/REVIEW/REJECT
+    const rawDecision = (output.decision || output.recommendation || "review");
+    const decisionMap: Record<string, string> = {
+      APPROVE: "approve",
+      REVIEW: "review",
+      REJECT: "reject",
+      approved: "approve",
+      needs_verification: "review",
+      rejected: "reject",
+    };
+    const decision = decisionMap[rawDecision] || rawDecision.toLowerCase();
+
+    // ✅ Financial estimates from backend ranges (use midpoint)
+    const revenueRange = output.monthly_revenue_range ?? [0, 0];
+    const incomeRange = output.monthly_income_range ?? [0, 0];
+    const monthly_revenue = Math.round((revenueRange[0] + revenueRange[1]) / 2);
+    const monthly_profit = Math.round((incomeRange[0] + incomeRange[1]) / 2);
+
+    // ✅ Confidence (pipeline field or transform field)
+    const confidence = output.confidence ?? output.confidence_score ?? 0.5;
 
     // ✅ Inject location
     const location = {
@@ -85,36 +103,54 @@ export async function submitUnderwrite(
       },
     ];
 
-    // ✅ Simple working capital proxy → loan sizing
-    const base = (output.visual_score ?? 0.5) * 50000;
+    // ✅ Loan sizing based on monthly revenue
+    const loanBase = monthly_revenue || ((output.visual_score ?? 0.5) * 50000);
 
     const loan_sizing = {
-      recommended: Math.round(base * 6),
-      minimum: Math.round(base * 3),
-      maximum: Math.round(base * 9),
+      recommended: Math.round(loanBase * 6),
+      minimum: Math.round(loanBase * 3),
+      maximum: Math.round(loanBase * 9),
       tenure_months: 12,
       interest_rate: 18,
-      emi: Math.round((base * 6 * 1.18) / 12),
+      emi: Math.round((loanBase * 6 * 1.18) / 12),
     };
+
+    // ✅ Merge pipeline fraud_flags + risk_flags into unified array
+    const pipelineFlags = (output.fraud_flags ?? []).map((f: any) =>
+      typeof f === "string"
+        ? { code: f, severity: "medium" as const, description: f }
+        : f
+    );
+    const riskFlags = (output.risk_flags ?? []).map((r: string) => ({
+      code: r,
+      severity: "medium" as const,
+      description: r.replace(/_/g, " "),
+    }));
+    const allFlags = [...pipelineFlags, ...riskFlags];
+
+    // ✅ Risk score: composite_score scaled to 0-100 (lower = better)
+    const compositeScore = output.composite_score ?? 0.5;
+    const risk_score = Math.round((1 - compositeScore) * 100);
 
     // ✅ Final normalized object
     const normalized = {
       ...output,
       decision,
       location,
-      scores,
+      feature_scores: scores,
       loan_sizing,
+      monthly_revenue,
+      monthly_profit,
+      confidence,
+      risk_score,
 
-      // fallback fields
-      risk_score: output.composite_score ?? 50,
-      confidence: output.confidence ?? 0.5,
       store_name: output.store_id ?? "Unknown Store",
       owner_name: "Store Owner",
       id: Math.random().toString(36).slice(2, 10).toUpperCase(),
       created_at: new Date().toISOString(),
       images_count: req.images.length,
 
-      fraud_flags: output.fraud_flags ?? [],
+      fraud_flags: allFlags,
 
       breakdown: output.breakdown ?? {
         visual_contribution: 0,

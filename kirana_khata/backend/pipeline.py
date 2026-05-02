@@ -39,11 +39,11 @@ class KiranaUnderwriter:
         profile = underwriter.run({
             "store_id": "K-12345",
             "image_paths": {
-                "storefront":    "imgs/front.jpg",
-                "interior_wide": "imgs/interior.jpg",
-                "shelf_close":   "imgs/shelf.jpg",
-                "billing_area":  "imgs/billing.jpg",
-                "signage":       "imgs/sign.jpg",
+                "front":        "imgs/front.jpg",
+                "billing_area": "imgs/billing.jpg",
+                "left_wall":    "imgs/left_wall.jpg",
+                "centre_wall":  "imgs/centre_wall.jpg",
+                "right_wall":   "imgs/right_wall.jpg",
             },
             "latitude": 19.076,
             "longitude": 72.877,
@@ -120,7 +120,7 @@ class KiranaUnderwriter:
         # ── 2. Object detection ──────────────────────────────────────
         detections = self._run_detector(loaded)
 
-        # ── 3. Shelf analysis (on the shelf_close image) ─────────────
+        # ── 3. Shelf analysis (on the centre_wall image) ──────────────
         shelf_metrics = self._run_shelf(loaded)
 
         # ── 4. Inventory estimation ──────────────────────────────────
@@ -162,6 +162,9 @@ class KiranaUnderwriter:
         profile.metadata["shelf_metrics"] = shelf_metrics.to_dict()
         profile.metadata["inventory"] = inventory.to_dict()
         profile.metadata["geo_extraction"] = geo_result.to_dict()
+        profile.metadata["views_used"] = [
+            "front", "left_wall", "centre_wall", "right_wall",
+        ]
 
         logger.info(
             "✔ Pipeline complete for %s in %.3fs → %s (composite=%.4f)",
@@ -190,7 +193,7 @@ class KiranaUnderwriter:
                                  InventoryEstimate.category_counts
             store_cleanliness  ← ShelfMetrics.sdi_uniformity (uniform
                                  stocking is a proxy for tidiness)
-            signage_visible    ← True if the "signage" image loaded OK
+            signage_visible    ← True if the "front" image loaded OK
                                  and had decent brightness
             lighting_quality   ← average brightness across all loaded
                                  images, normalised to 0-1
@@ -221,10 +224,10 @@ class KiranaUnderwriter:
         # -- store_cleanliness (sdi_uniformity as proxy) -------------------
         store_cleanliness = shelf.sdi_uniformity
 
-        # -- signage_visible -----------------------------------------------
-        signage_diag = loaded.diagnostics.get("signage", {})
-        signage_loaded = "error" not in signage_diag
-        signage_bright = signage_diag.get("brightness_mean", 0.0) > 50.0
+        # -- signage_visible (derived from 'front' exterior image) ----------
+        front_diag = loaded.diagnostics.get("front", {})
+        signage_loaded = "error" not in front_diag
+        signage_bright = front_diag.get("brightness_mean", 0.0) > 50.0
         signage_visible = signage_loaded and signage_bright
 
         # -- lighting_quality ----------------------------------------------
@@ -251,7 +254,7 @@ class KiranaUnderwriter:
             "sdi_depth": round(shelf.sdi_depth, 4),
             "fast_moving_fraction": round(inventory.fast_moving_fraction, 4),
             "inventory_value_inr": round(inventory.inventory_value_inr, 2),
-            "signage_diag": signage_diag,
+            "front_diag": front_diag,
             "image_count": len(loaded.images),
             "all_images_valid": loaded.all_valid,
         }
@@ -286,7 +289,7 @@ class KiranaUnderwriter:
     def _run_image_loader(
         self, image_paths: Dict[str, str]
     ) -> LoadedImageSet:
-        """Load and preprocess the five required images."""
+        """Load and preprocess the five required store-view images."""
         loader = ImageLoader(image_paths, config=self._img_loader_cfg)
         loaded = loader.load()
         if not loaded.all_valid:
@@ -319,16 +322,16 @@ class KiranaUnderwriter:
         return all_detections
 
     def _run_shelf(self, loaded: LoadedImageSet) -> ShelfMetrics:
-        """Run shelf analysis on the shelf_close image.
+        """Run shelf analysis on the centre_wall image.
 
-        Falls back to interior_wide if shelf_close is missing.
+        Falls back to left_wall if centre_wall is missing.
         """
         shelf_img = loaded.images.get(
-            "shelf_close", loaded.images.get("interior_wide")
+            "centre_wall", loaded.images.get("left_wall")
         )
         if shelf_img is None:
             logger.warning(
-                "No shelf or interior image available – "
+                "No centre_wall or left_wall image available – "
                 "returning default ShelfMetrics"
             )
             return ShelfMetrics()
@@ -367,11 +370,11 @@ class KiranaPipeline:
         result = pipeline.run({
             "store_id": "K-12345",
             "image_paths": {
-                "storefront":    "imgs/front.jpg",
-                "interior_wide": "imgs/interior.jpg",
-                "shelf_close":   "imgs/shelf.jpg",
-                "billing_area":  "imgs/billing.jpg",
-                "signage":       "imgs/sign.jpg",
+                "front":        "imgs/front.jpg",
+                "billing_area": "imgs/billing.jpg",
+                "left_wall":    "imgs/left_wall.jpg",
+                "centre_wall":  "imgs/centre_wall.jpg",
+                "right_wall":   "imgs/right_wall.jpg",
             },
             "latitude": 19.076,
             "longitude": 72.877,

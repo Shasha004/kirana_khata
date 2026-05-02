@@ -6,6 +6,9 @@ const MAX_IMAGES = 5;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 const MAX_SIZE_MB = 10;
 
+/** Labels for the five required store-view image slots. */
+const SLOT_LABELS = ['Front', 'Billing Area', 'Left Wall', 'Centre Wall', 'Right Wall'] as const;
+
 interface ImageUploadProps {
   images: File[];
   onChange: (files: File[]) => void;
@@ -147,8 +150,9 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                   </button>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', paddingTop: 20 }}>
-                  {idx + 1}
+                <div style={{ textAlign: 'center', paddingTop: 20, color: '#999', fontSize: 12 }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>{idx + 1}</div>
+                  {SLOT_LABELS[idx]}
                 </div>
               )}
             </div>

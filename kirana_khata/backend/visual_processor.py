@@ -1,10 +1,10 @@
 """Visual processing module for Kirana store image analysis.
 
 Provides structured feature extraction from store imagery and an
-orchestrator that runs the full visual analysis workflow. Actual CV/ML
-models are not wired in yet; the processor operates on pre-extracted
-metadata dictionaries so the rest of the pipeline can be developed and
-tested independently.
+orchestrator that runs the full visual analysis workflow.  Supports the
+new multi-wall store-view layout (left_wall, centre_wall, right_wall)
+with averaged interior scoring, and uses the *front* image for exterior
+quality features.
 """
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ class VisualFeatures:
     lighting_quality: float = 0.0
     raw_detections: List[Dict[str, Any]] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    views_used: List[str] = field(default_factory=list)
 
     # -- convenience helpers ------------------------------------------------
 
@@ -129,6 +130,55 @@ class VisualProcessor:
         )
         logger.debug("Extracted visual features: %s", features)
         return features
+
+    def compute_wall_scores(
+        self,
+        wall_features: Dict[str, VisualFeatures],
+    ) -> Dict[str, Any]:
+        """Compute per-wall visual scores and return the average.
+
+        The new store-view layout captures three interior walls:
+        ``left_wall``, ``centre_wall``, and ``right_wall``.  This method
+        scores each wall independently and returns both individual scores
+        and their arithmetic mean.
+
+        Args:
+            wall_features: Mapping of wall key → ``VisualFeatures``.
+                           Expected keys: ``left_wall``, ``centre_wall``,
+                           ``right_wall``.
+
+        Returns:
+            A dict with per-wall scores and the averaged score::
+
+                {
+                    "left_wall_score": float,
+                    "centre_wall_score": float,
+                    "right_wall_score": float,
+                    "average_wall_score": float,
+                }
+        """
+        expected = ["left_wall", "centre_wall", "right_wall"]
+        scores: Dict[str, float] = {}
+
+        for wall in expected:
+            feat = wall_features.get(wall)
+            if feat is not None:
+                scores[f"{wall}_score"] = self.compute_visual_score(feat)
+            else:
+                logger.warning("Missing wall features for '%s' – using 0.0", wall)
+                scores[f"{wall}_score"] = 0.0
+
+        avg = sum(scores.values()) / len(scores) if scores else 0.0
+        scores["average_wall_score"] = round(avg, 4)
+
+        logger.info(
+            "Wall scores: left=%.4f, centre=%.4f, right=%.4f, avg=%.4f",
+            scores.get("left_wall_score", 0.0),
+            scores.get("centre_wall_score", 0.0),
+            scores.get("right_wall_score", 0.0),
+            scores["average_wall_score"],
+        )
+        return scores
 
     def compute_visual_score(self, features: VisualFeatures) -> float:
         """Compute a normalised visual health score from extracted features.

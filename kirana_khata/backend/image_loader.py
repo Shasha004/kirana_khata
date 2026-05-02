@@ -1,10 +1,11 @@
 """Image loading and preprocessing module for Kirana store underwriting.
 
-Loads a mandatory set of five store images, validates their existence
-and decodability, resizes to a max dimension, detects low-light
-conditions, and applies corrective enhancements (gamma correction,
-CLAHE, denoising).  Returns processed numpy arrays ready for
-downstream detection and analysis.
+Loads a mandatory set of five store-view images (front, billing_area,
+left_wall, centre_wall, right_wall), validates their existence and
+decodability, resizes to a max dimension, detects low-light conditions,
+and applies corrective enhancements (gamma correction, CLAHE,
+denoising).  Returns processed numpy arrays ready for downstream
+detection and analysis.
 """
 
 from __future__ import annotations
@@ -24,13 +25,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 REQUIRED_IMAGE_KEYS: Tuple[str, ...] = (
-    "storefront",
-    "interior_wide",
-    "shelf_close",
+    "front",
     "billing_area",
-    "signage",
+    "left_wall",
+    "centre_wall",
+    "right_wall",
 )
-"""The five mandatory image slots that every store submission must fill."""
+"""The five mandatory store-view image slots that every submission must fill."""
 
 MAX_DIMENSION: int = 1280
 """Images are resized so the longest edge does not exceed this value."""
@@ -78,20 +79,20 @@ class LoadedImageSet:
 # ---------------------------------------------------------------------------
 
 class ImageLoader:
-    """Loads, validates, and preprocesses the five required store images.
+    """Loads, validates, and preprocesses the five required store-view images.
 
     Usage::
 
         loader = ImageLoader(image_paths={
-            "storefront":   "imgs/front.jpg",
-            "interior_wide":"imgs/interior.jpg",
-            "shelf_close":  "imgs/shelf.jpg",
+            "front":        "imgs/front.jpg",
             "billing_area": "imgs/billing.jpg",
-            "signage":      "imgs/sign.jpg",
+            "left_wall":    "imgs/left_wall.jpg",
+            "centre_wall":  "imgs/centre_wall.jpg",
+            "right_wall":   "imgs/right_wall.jpg",
         })
         result = loader.load()
         assert result.all_valid
-        front_img = result.images["storefront"]   # numpy BGR array
+        front_img = result.images["front"]   # numpy BGR array
 
     Config overrides (passed via *config* dict):
         - ``max_dimension``       (int)   – default 1280

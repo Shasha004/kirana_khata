@@ -7,6 +7,18 @@ interface FeatureScoresProps {
   scores?: FeatureScore[]; // 🔥 made optional
 }
 
+const EXPLANATIONS: Record<string, string> = {
+  visual_score: "Clear product visibility and optimal shelf layout.",
+  geo_score: "Located in a high-footfall, commercially active zone.",
+  fraud_score: "No major inconsistencies across images and location.",
+  shelf_occupancy: "Shelves are well-stocked, indicating good inventory.",
+  product_count: "High number of distinct products detected.",
+  category_diversity: "Wide range of product categories available.",
+  inventory_value_inr: "Significant stock depth indicating a healthy business.",
+  market_share: "Strong local market presence compared to competitors."
+};
+
+
 function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
   const [animated, setAnimated] = useState(0);
 
@@ -101,6 +113,7 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
             height: 5,
             background: 'var(--bg-elevated)',
             borderRadius: 3,
+            marginBottom: 6,
           }}
         >
           <div
@@ -112,6 +125,12 @@ function ScoreBar({ score, delay }: { score: FeatureScore; delay: number }) {
             }}
           />
         </div>
+        
+        {EXPLANATIONS[score.name] && (
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>
+            {EXPLANATIONS[score.name]}
+          </div>
+        )}
       </div>
 
       <div style={{ width: 36, textAlign: 'right' }}>

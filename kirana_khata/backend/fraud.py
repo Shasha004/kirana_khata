@@ -122,14 +122,7 @@ class FraudDetector:
     def _check_cross(self, vf: VisualFeatures, gf: GeoFeatures,
                      fin: Dict[str, Any]) -> List[FraudFlag]:
         flags: List[FraudFlag] = []
-        revenue = fin.get("monthly_revenue", 0.0)
-        if revenue > 500_000 and vf.shelf_occupancy < 0.20:
-            flags.append(FraudFlag(
-                "CROSS_REVENUE_VS_SHELF", Severity.CRITICAL,
-                "High revenue but very low shelf occupancy.",
-                {"monthly_revenue": revenue,
-                 "shelf_occupancy": vf.shelf_occupancy},
-            ))
+        
         claimed = fin.get("claimed_tier")
         if claimed is not None and claimed < gf.region_tier:
             flags.append(FraudFlag(

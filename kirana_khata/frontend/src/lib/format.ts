@@ -3,11 +3,15 @@
  */
 export function formatINR(amount: number): string {
   if (isNaN(amount)) return '₹0';
+  
+  // 🔥 Intelligently round large estimates to the nearest 100
+  const roundedAmount = amount > 1000 ? Math.round(amount / 100) * 100 : amount;
+  
   const formatted = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(roundedAmount);
   return formatted;
 }
 

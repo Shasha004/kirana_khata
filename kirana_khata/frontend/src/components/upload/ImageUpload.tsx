@@ -7,11 +7,11 @@ const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 const MAX_SIZE_MB = 10;
 
 const SLOT_INFO = [
-  { label: 'Storefront + Street', text: 'Upload a full front view of the shop including entrance and surrounding street' },
-  { label: 'Main Shelves', text: 'Upload shelves showing overall stock levels and inventory density' },
-  { label: 'Product Variety Section', text: 'Upload a section showing different product categories (snacks, FMCG, staples)' },
-  { label: 'Counter Area', text: 'Upload the billing counter and nearby fast-moving items' },
-  { label: 'Storage / Back Area', text: 'Upload storage area showing extra inventory or stock backup' }
+  { label: 'Front / Street View', text: 'Upload the exterior showing the shop entrance and street (used for signage & footfall proxy)' },
+  { label: 'Billing / Counter Area', text: 'Upload the checkout counter (used for fast-moving items & POS detection)' },
+  { label: 'Left Interior Wall', text: 'Upload the shelves on the left side of the store' },
+  { label: 'Centre / Back Wall', text: 'Upload the main back wall shelves (primary view for Shelf Density Index)' },
+  { label: 'Right Interior Wall', text: 'Upload the shelves on the right side of the store' }
 ];
 
 interface ImageUploadProps {
@@ -178,8 +178,8 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                   flexShrink: 0
                 }}>i</span>
                 <span style={{ lineHeight: 1.3 }}>
-                  <span style={{ fontWeight: 700, color: idx === 4 ? 'var(--text-secondary)' : 'var(--danger)', marginRight: 4 }}>
-                    {idx === 4 ? '(OPTIONAL)' : '(MANDATORY)'}
+                  <span style={{ fontWeight: 700, color: 'var(--danger)', marginRight: 4 }}>
+                    (MANDATORY)
                   </span>
                   {SLOT_INFO[idx].text}
                 </span>

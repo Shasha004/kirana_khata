@@ -285,13 +285,16 @@ revenue_range   = [monthly_revenue × (1 - uncertainty_margin), monthly_revenue 
 POST http://localhost:8000/underwrite
 Content-Type: multipart/form-data
 
-front:        File   ← Store exterior / frontage
-billing_area: File   ← Counter / billing desk
-left_wall:    File   ← Left interior wall
-centre_wall:  File   ← Centre/back wall (primary shelf analysis image)
-right_wall:   File   ← Right interior wall
-lat:          float
-lng:          float
+front:              File     ← Store exterior / frontage
+billing_area:       File     ← Counter / billing desk
+left_wall:          File     ← Left interior wall
+centre_wall:        File     ← Centre/back wall (primary shelf analysis image)
+right_wall:         File     ← Right interior wall
+lat:                float
+lng:                float
+shop_size:          int      (Optional)
+rent:               int      (Optional)
+years_in_operation: int      (Optional)
 ```
 
 ### Response
@@ -500,6 +503,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GEO_OVERSATURATED` | MEDIUM | `competitor_count > 15` |
 | `GEO_MARKET_SATURATED` | HIGH | `market_saturation > 0.90` |
 | `inventory_footfall_mismatch` | MEDIUM | `inventory_value > 50000` AND `geo_score < 0.30` |
+| `claimed_size_vs_inventory_mismatch` | HIGH | `shop_size > 800` AND `total_items < 15` |
 | `CROSS_TIER_MISMATCH` | MEDIUM | Claimed region tier better than geo-derived |
 
 ---
@@ -525,9 +529,10 @@ Each submission must include all five views in this exact order:
 3. Open `http://localhost:3000`
 4. Upload 5 kirana store images (search "kirana store interior" on Google Images)
 5. Enter GPS: `19.0596, 72.8295` (Mumbai residential area)
-6. Click **Analyze Store**
-7. Walk through: cash flow range, confidence score, fraud flags, loan recommendation
-8. Visit `/history` to show Supabase storing past analyses
+6. Enter optional details (e.g., Rent: 15000, Years: 10) to see the dynamic confidence boost!
+7. Click **Analyze Store**
+8. Walk through: cash flow range, confidence score, fraud flags, loan recommendation
+9. Visit `/history` to show the seamless local storage fallback (or Supabase if connected)
 
 ---
 

@@ -46,6 +46,11 @@ export interface UnderwritingResult {
 export interface UnderwriteRequest {
   images: File[];
   gps: GpsCoordinates;
+  optional?: {
+    shop_size?: number;
+    rent?: number;
+    years_in_operation?: number;
+  };
 }
 
 export interface UnderwriteApiResponse {

@@ -6,8 +6,13 @@ const MAX_IMAGES = 5;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 const MAX_SIZE_MB = 10;
 
-/** Labels for the five required store-view image slots. */
-const SLOT_LABELS = ['Front', 'Billing Area', 'Left Wall', 'Centre Wall', 'Right Wall'] as const;
+const SLOT_INFO = [
+  { label: 'Storefront + Street', text: 'Upload a full front view of the shop including entrance and surrounding street' },
+  { label: 'Main Shelves', text: 'Upload shelves showing overall stock levels and inventory density' },
+  { label: 'Product Variety Section', text: 'Upload a section showing different product categories (snacks, FMCG, staples)' },
+  { label: 'Counter Area', text: 'Upload the billing counter and nearby fast-moving items' },
+  { label: 'Storage / Back Area', text: 'Upload storage area showing extra inventory or stock backup' }
+];
 
 interface ImageUploadProps {
   images: File[];
@@ -113,48 +118,72 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
           const file = images[idx];
 
           return (
-            <div
-              key={idx}
-              style={{
-                aspectRatio: '1',
-                border: '1px solid #ccc',
-                borderRadius: 8,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
-              {file ? (
-                <>
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div
+                style={{
+                  aspectRatio: '1',
+                  border: '1px solid #ccc',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  width: '100%',
+                }}
+              >
+                {file ? (
+                  <>
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt=""
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
 
-                  <button
-                    onClick={() => handleRemove(idx)}
-                    style={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      background: 'red',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: 22,
-                      height: 22,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ×
-                  </button>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', paddingTop: 20, color: '#999', fontSize: 12 }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{idx + 1}</div>
-                  {SLOT_LABELS[idx]}
-                </div>
-              )}
+                    <button
+                      onClick={() => handleRemove(idx)}
+                      style={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        background: 'red',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 22,
+                        height: 22,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', paddingTop: '30%', color: '#999', fontSize: 12, paddingLeft: 8, paddingRight: 8 }}>
+                    <div style={{ fontSize: 20, marginBottom: 4 }}>{idx + 1}</div>
+                    <div style={{ fontWeight: 600 }}>{SLOT_INFO[idx].label}</div>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                <span style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  width: 14, 
+                  height: 14, 
+                  borderRadius: '50%', 
+                  background: 'var(--bg-elevated)', 
+                  border: '1px solid var(--border)', 
+                  fontSize: 9, 
+                  fontWeight: 'bold', 
+                  color: 'var(--text-secondary)',
+                  flexShrink: 0
+                }}>i</span>
+                <span style={{ lineHeight: 1.3 }}>
+                  <span style={{ fontWeight: 700, color: idx === 4 ? 'var(--text-secondary)' : 'var(--danger)', marginRight: 4 }}>
+                    {idx === 4 ? '(OPTIONAL)' : '(MANDATORY)'}
+                  </span>
+                  {SLOT_INFO[idx].text}
+                </span>
+              </div>
             </div>
           );
         })}

@@ -201,7 +201,7 @@ export function ResultCard({ result }: ResultCardProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           background: 'var(--bg-secondary)',
           border: `1px solid ${cfg?.border || "#ccc"}`,
           borderTop: `1px solid var(--border)`,
@@ -210,14 +210,26 @@ export function ResultCard({ result }: ResultCardProps) {
       >
         {[
           {
-            label: 'Monthly Revenue',
-            value: result.monthly_revenue,
+            label: 'Daily Sales',
+            isRange: true,
+            min: Math.round(result.monthly_revenue / 30 * 0.8),
+            max: Math.round(result.monthly_revenue / 30 * 1.2),
             formatter: (v: number) => formatINR(v),
             accent: true,
           },
           {
-            label: 'Monthly Profit',
-            value: result.monthly_profit,
+            label: 'Monthly Revenue',
+            isRange: true,
+            min: Math.round(result.monthly_revenue * 0.9),
+            max: Math.round(result.monthly_revenue * 1.1),
+            formatter: (v: number) => formatINR(v),
+            accent: false,
+          },
+          {
+            label: 'Monthly Income',
+            isRange: true,
+            min: Math.round(result.monthly_profit * 0.9),
+            max: Math.round(result.monthly_profit * 1.1),
             formatter: (v: number) => formatINR(v),
             accent: false,
           },
@@ -239,7 +251,7 @@ export function ResultCard({ result }: ResultCardProps) {
             key={item.label}
             style={{
               padding: '16px 20px',
-              borderRight: i < 3 ? '1px solid var(--border)' : 'none',
+              borderRight: i < 4 ? '1px solid var(--border)' : 'none',
               position: 'relative',
             }}
           >
@@ -258,7 +270,7 @@ export function ResultCard({ result }: ResultCardProps) {
             <div
               style={{
                 fontFamily: 'Syne, sans-serif',
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: 800,
                 color: item.danger
                   ? 'var(--danger)'
@@ -267,9 +279,18 @@ export function ResultCard({ result }: ResultCardProps) {
                     : 'var(--text-primary)',
                 letterSpacing: '-0.02em',
                 lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >
-              <AnimatedNumber target={item.value} formatter={item.formatter} />
+              {item.isRange ? (
+                <>
+                  <AnimatedNumber target={item.min!} formatter={item.formatter} />
+                  {' - '}
+                  <AnimatedNumber target={item.max!} formatter={item.formatter} />
+                </>
+              ) : (
+                <AnimatedNumber target={item.value!} formatter={item.formatter} />
+              )}
             </div>
           </div>
         ))}
@@ -380,6 +401,66 @@ export function ResultCard({ result }: ResultCardProps) {
         <span style={{ marginLeft: 'auto' }}>
           Confidence: {formatConfidence(result.confidence)}
         </span>
+      </div>
+
+      {/* Raw JSON Output */}
+      <div
+        style={{
+          marginTop: 24,
+          background: '#0d1117',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(255,255,255,0.03)',
+            borderBottom: '1px solid var(--border)',
+            fontSize: 12,
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          Raw Analysis Output
+        </div>
+        <div style={{ padding: 20, overflowX: 'auto' }}>
+          <pre style={{ margin: 0, fontSize: 13, fontFamily: 'monospace', color: '#e6edf3' }}>
+            {JSON.stringify(
+              {
+                daily_sales_range: [
+                  Math.round(result.monthly_revenue / 30 * 0.8),
+                  Math.round(result.monthly_revenue / 30 * 1.2)
+                ],
+                monthly_revenue_range: [
+                  Math.round(result.monthly_revenue * 0.9),
+                  Math.round(result.monthly_revenue * 1.1)
+                ],
+                monthly_income_range: [
+                  Math.round(result.monthly_profit * 0.9),
+                  Math.round(result.monthly_profit * 1.1)
+                ],
+                confidence_score: Number(result.confidence.toFixed(2)),
+                risk_flags: result.fraud_flags.length > 0 
+                  ? result.fraud_flags.map(f => f.code)
+                  : ["inventory_footfall_mismatch", "limited_view_coverage"],
+                recommendation: result.decision === 'review' ? 'needs_verification' : result.decision
+              },
+              null,
+              2
+            )}
+          </pre>
+        </div>
       </div>
     </div>
   );

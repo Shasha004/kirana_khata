@@ -52,6 +52,12 @@ export async function submitUnderwrite(
     }
 
     const raw = await res.json();
+    
+    // 🚨 IMPORTANT: Catch backend JSON errors before normalization
+    if (raw.error) {
+      throw new Error(raw.error);
+    }
+    
     const output = raw.underwriting_output || raw;
 
     // ==============================
@@ -133,11 +139,10 @@ export async function submitUnderwrite(
     };
 
     // ✅ Merge pipeline fraud_flags + risk_flags into unified array
-    const pipelineFlags = (output.fraud_flags ?? []).map((f: any) =>
-      typeof f === "string"
-        ? { code: f, severity: "medium" as const, description: f }
-        : f
-    );
+    const pipelineFlags = (output.fraud_flags ?? []).map((f: any) => {
+      if (typeof f === "string") return { code: f, severity: "medium" as const, description: f };
+      return { code: f.rule_id || f.code || "FLAG", severity: f.severity || "medium", description: f.description || "" };
+    });
     const riskFlags = (output.risk_flags ?? []).map((r: string) => ({
       code: r,
       severity: "medium" as const,

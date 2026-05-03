@@ -257,10 +257,12 @@ Two XGBoost-backed models (gracefully fall back to sklearn `GradientBoostingRegr
 After the pipeline, `app.py` runs `transform_to()` to produce lender-friendly output:
 
 ```python
-monthly_revenue = inventory_value × (1 + fast_moving_fraction × 5) × 30
-revenue_range   = [monthly_revenue × 0.8, monthly_revenue × 1.2]
-daily_range     = [revenue_range[0] / 30, revenue_range[1] / 30]
-income_range    = [revenue_range[0] × 0.12, revenue_range[1] × 0.18]
+# Multi-modal fusion of inventory, velocity, geo-score, and SKU diversity
+monthly_revenue = int(inventory_value × (1 + fast_moving_fraction × 3) × 30 × (0.5 + geo_score) × (0.8 + sku_diversity × 0.5))
+
+# Dynamic uncertainty (widens if confidence score is low)
+uncertainty_margin = 0.4 - (confidence × 0.3)
+revenue_range   = [monthly_revenue × (1 - uncertainty_margin), monthly_revenue × (1 + uncertainty_margin)]
 ```
 
 ---
@@ -487,7 +489,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `VISUAL_POOR_LIGHTING` | LOW | `lighting_quality < 0.15` |
 | `GEO_OVERSATURATED` | MEDIUM | `competitor_count > 15` |
 | `GEO_MARKET_SATURATED` | HIGH | `market_saturation > 0.90` |
-| `CROSS_REVENUE_VS_SHELF` | CRITICAL | `monthly_revenue > ₹5L` AND `shelf_occupancy < 0.20` |
+| `inventory_footfall_mismatch` | MEDIUM | `inventory_value > 50000` AND `geo_score < 0.30` |
 | `CROSS_TIER_MISMATCH` | MEDIUM | Claimed region tier better than geo-derived |
 
 ---

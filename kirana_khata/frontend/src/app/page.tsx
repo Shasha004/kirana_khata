@@ -445,12 +445,12 @@ export default function HomePage() {
               What We Analyze
             </div>
             {[
-              { icon: '📦', label: 'Stock density & shelf utilization' },
-              { icon: '👥', label: 'Footfall proxy signals' },
-              { icon: '🧹', label: 'Store cleanliness & upkeep' },
-              { icon: '📱', label: 'Digital payment adoption' },
-              { icon: '🏪', label: 'Signage quality & branding' },
-              { icon: '📍', label: 'GPS verification against records' },
+              { icon: '📦', label: 'Shelf Density Index (SDI)' },
+              { icon: '🏷️', label: 'SKU Diversity & Categories' },
+              { icon: '🌍', label: 'Geo-Intelligence & Footfall' },
+              { icon: '💸', label: 'Fast-Moving Inventory Value' },
+              { icon: '🛡️', label: 'Cross-Signal Fraud Validation' },
+              { icon: '📍', label: 'GPS vs Regional Tier Check' },
             ].map((item) => (
               <div
                 key={item.label}

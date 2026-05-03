@@ -16,7 +16,7 @@ interface UseUnderwriteState {
 }
 
 interface UseUnderwriteReturn extends UseUnderwriteState {
-  submit: (images: File[], gps: GpsCoordinates) => Promise<void>;
+  submit: (images: File[], gps: GpsCoordinates, optional?: { shop_size?: number; rent?: number; years_in_operation?: number; }) => Promise<void>;
   reset: () => void;
 }
 
@@ -27,13 +27,13 @@ export function useUnderwrite(): UseUnderwriteReturn {
     error: null,
   });
 
-  const submit = useCallback(async (images: File[], gps: GpsCoordinates) => {
+  const submit = useCallback(async (images: File[], gps: GpsCoordinates, optional?: { shop_size?: number; rent?: number; years_in_operation?: number; }) => {
     setState({ status: 'uploading', result: null, error: null });
 
     await new Promise((r) => setTimeout(r, 600));
     setState((s) => ({ ...s, status: 'analyzing' }));
 
-    const response = await submitUnderwrite({ images, gps });
+    const response = await submitUnderwrite({ images, gps, optional });
 
     if (!response.success || !response.data) {
       setState({

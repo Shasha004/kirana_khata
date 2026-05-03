@@ -14,6 +14,12 @@ const REQUIRED_IMAGES = 5;
 export default function HomePage() {
   const [images, setImages] = useState<File[]>([]);
   const [gps, setGps] = useState<GpsCoordinates | null>(null);
+  
+  // Optional Inputs
+  const [shopSize, setShopSize] = useState<string>('');
+  const [rent, setRent] = useState<string>('');
+  const [yearsInOperation, setYearsInOperation] = useState<string>('');
+
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const { status, result, error, submit, reset } = useUnderwrite();
 
@@ -35,12 +41,22 @@ export default function HomePage() {
     if (!validate()) return;
     if (!gps) return;
     setValidationErrors([]);
-    await submit(images, gps);
+    
+    const optional = {
+      ...(shopSize && { shop_size: Number(shopSize) }),
+      ...(rent && { rent: Number(rent) }),
+      ...(yearsInOperation && { years_in_operation: Number(yearsInOperation) }),
+    };
+
+    await submit(images, gps, optional);
   };
 
   const handleReset = () => {
     setImages([]);
     setGps(null);
+    setShopSize('');
+    setRent('');
+    setYearsInOperation('');
     setValidationErrors([]);
     reset();
   };
@@ -103,6 +119,43 @@ export default function HomePage() {
           {/* GPS card */}
           <div className="card" style={{ padding: 24 }}>
             <GpsInput value={gps} onChange={setGps} />
+          </div>
+
+          {/* Optional Details Card */}
+          <div className="card" style={{ padding: 24 }}>
+            <div style={{ fontWeight: 600, marginBottom: 16 }}>Store Details (Optional)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Shop Size (sq ft)</label>
+                <input 
+                  type="number" 
+                  value={shopSize} 
+                  onChange={(e) => setShopSize(e.target.value)}
+                  placeholder="e.g. 200"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Monthly Rent (₹)</label>
+                <input 
+                  type="number" 
+                  value={rent} 
+                  onChange={(e) => setRent(e.target.value)}
+                  placeholder="e.g. 15000"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Years in Operation</label>
+                <input 
+                  type="number" 
+                  value={yearsInOperation} 
+                  onChange={(e) => setYearsInOperation(e.target.value)}
+                  placeholder="e.g. 5"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Validation errors */}

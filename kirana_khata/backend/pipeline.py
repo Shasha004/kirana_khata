@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 from .image_loader import ImageLoader, LoadedImageSet, REQUIRED_IMAGE_KEYS
 from .detector import YOLODetector, Detection
-from .shelf import ShelfAnalyzer, ShelfMetrics
+from .shelf import ShelfAnalyzer, ShelfMetrics, WallShelfResult, MULTI_WALL_KEYS
 from .inventory import InventoryEstimator, InventoryEstimate
 from .visual_processor import VisualProcessor, VisualFeatures
 from .geo import GeoFeatureExtractor
@@ -322,21 +322,34 @@ class KiranaUnderwriter:
         return all_detections
 
     def _run_shelf(self, loaded: LoadedImageSet) -> ShelfMetrics:
-        """Run shelf analysis on the centre_wall image.
+        """Run shelf analysis on all interior wall images with overlap correction.
 
-        Falls back to left_wall if centre_wall is missing.
+        Processes ``left_wall``, ``centre_wall``, ``right_wall``, and
+        ``billing_area`` independently, then fuses the results using
+        ``ShelfAnalyzer.combine_multi_wall()``.  Adjacent wall pairs
+        (left↔centre, centre↔right) share a 12% edge strip that is
+        averaged and counted exactly once in the combined output.
+
+        Falls back gracefully when individual images are missing.
         """
-        shelf_img = loaded.images.get(
-            "centre_wall", loaded.images.get("left_wall")
-        )
-        if shelf_img is None:
+        wall_results: Dict[str, WallShelfResult] = {}
+
+        for key in MULTI_WALL_KEYS:
+            img = loaded.images.get(key)
+            if img is None:
+                logger.warning(
+                    "Image '%s' not available – skipping in shelf analysis", key
+                )
+                continue
+            wall_results[key] = self._shelf.analyze_with_edges(img, key)
+
+        if not wall_results:
             logger.warning(
-                "No centre_wall or left_wall image available – "
-                "returning default ShelfMetrics"
+                "No wall images available – returning default ShelfMetrics"
             )
             return ShelfMetrics()
 
-        return self._shelf.analyze(shelf_img)
+        return self._shelf.combine_multi_wall(wall_results)
 
     # ------------------------------------------------------------------
     # Validation

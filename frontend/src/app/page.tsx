@@ -14,7 +14,7 @@ const REQUIRED_IMAGES = 5;
 export default function HomePage() {
   const [images, setImages] = useState<File[]>([]);
   const [gps, setGps] = useState<GpsCoordinates | null>(null);
-  
+
   // Optional Inputs
   const [shopSize, setShopSize] = useState<string>('');
   const [rent, setRent] = useState<string>('');
@@ -41,7 +41,7 @@ export default function HomePage() {
     if (!validate()) return;
     if (!gps) return;
     setValidationErrors([]);
-    
+
     const optional = {
       ...(shopSize && { shop_size: Number(shopSize) }),
       ...(rent && { rent: Number(rent) }),
@@ -93,7 +93,7 @@ export default function HomePage() {
           New Store Assessment
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', maxWidth: 520 }}>
-          Upload store images and capture GPS location. AI analyzes inventory density, 
+          Upload store images and capture GPS location. AI analyzes inventory density,
           footfall signals, and store health to generate an underwriting decision.
         </p>
       </div>
@@ -127,9 +127,9 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Shop Size (sq ft)</label>
-                <input 
-                  type="number" 
-                  value={shopSize} 
+                <input
+                  type="number"
+                  value={shopSize}
                   onChange={(e) => setShopSize(e.target.value)}
                   placeholder="e.g. 200"
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
@@ -137,9 +137,9 @@ export default function HomePage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Monthly Rent (₹)</label>
-                <input 
-                  type="number" 
-                  value={rent} 
+                <input
+                  type="number"
+                  value={rent}
                   onChange={(e) => setRent(e.target.value)}
                   placeholder="e.g. 15000"
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
@@ -147,9 +147,9 @@ export default function HomePage() {
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Years in Operation</label>
-                <input 
-                  type="number" 
-                  value={yearsInOperation} 
+                <input
+                  type="number"
+                  value={yearsInOperation}
                   onChange={(e) => setYearsInOperation(e.target.value)}
                   placeholder="e.g. 5"
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
@@ -358,10 +358,10 @@ export default function HomePage() {
                   status === 'uploading'
                     ? 'Uploading...'
                     : status === 'analyzing'
-                    ? 'Analyzing...'
-                    : status === 'done'
-                    ? 'Complete'
-                    : 'Pending',
+                      ? 'Analyzing...'
+                      : status === 'done'
+                        ? 'Complete'
+                        : 'Pending',
               },
             ].map((item) => (
               <div
@@ -381,8 +381,8 @@ export default function HomePage() {
                     background: item.done
                       ? 'var(--success)'
                       : item.partial
-                      ? 'var(--accent)'
-                      : 'var(--bg-elevated)',
+                        ? 'var(--accent)'
+                        : 'var(--bg-elevated)',
                     border: `2px solid ${item.done ? 'var(--success)' : item.partial ? 'var(--accent)' : 'var(--border-bright)'}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -411,8 +411,8 @@ export default function HomePage() {
                       color: item.done
                         ? 'var(--success)'
                         : item.partial
-                        ? 'var(--accent)'
-                        : 'var(--text-secondary)',
+                          ? 'var(--accent)'
+                          : 'var(--text-secondary)',
                       marginBottom: 2,
                       transition: 'color 0.3s',
                     }}

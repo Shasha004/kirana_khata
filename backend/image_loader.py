@@ -158,6 +158,7 @@ class ImageLoader:
             3. Resize so the longest edge ≤ ``max_dimension``.
             4. Detect low-light via grayscale mean.
             5. If low-light → apply gamma correction, CLAHE, denoising.
+            6. Run blur validation and genuine angle grid checks.
 
         Returns:
             A ``LoadedImageSet`` with processed arrays and diagnostics.
@@ -165,9 +166,24 @@ class ImageLoader:
         result = LoadedImageSet()
         all_ok = True
 
+        # Step 0 - Compute file hashes to find duplicates
+        hashes: Dict[str, str] = {}
+        duplicates: Dict[str, str] = {}  # maps image_key -> other_image_key
+        for key in REQUIRED_IMAGE_KEYS:
+            path = self.image_paths[key]
+            h = self._compute_file_hash(path)
+            if h:
+                if h in hashes:
+                    duplicates[key] = hashes[h]
+                else:
+                    hashes[h] = key
+
         for key in REQUIRED_IMAGE_KEYS:
             path = self.image_paths[key]
             diag: Dict[str, Any] = {"path": path}
+
+            if key in duplicates:
+                diag["duplicate_of"] = duplicates[key]
 
             # Step 1 – Read.
             img = self._read_image(path)
@@ -204,6 +220,15 @@ class ImageLoader:
                 )
             else:
                 diag["enhanced"] = False
+
+            # Step 5 - Quality & Blurriness Check
+            blur_val = self._compute_blur_variance(img)
+            diag["blur_variance"] = round(blur_val, 2)
+            diag["is_blurry"] = blur_val < 80.0
+
+            # Step 6 - Genuine Angle Grid Verification (for left, centre, right walls)
+            angle_res = self._verify_shelf_grid(img, key)
+            diag["genuine_angle_check"] = angle_res
 
             result.images[key] = img
             result.diagnostics[key] = diag
@@ -335,3 +360,77 @@ class ImageLoader:
             templateWindowSize=7,
             searchWindowSize=21,
         )
+
+    @staticmethod
+    def _compute_file_hash(path: str) -> Optional[str]:
+        """Compute MD5 checksum of a file to check for duplicates."""
+        import hashlib
+        if not os.path.isfile(path):
+            return None
+        hasher = hashlib.md5()
+        try:
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hasher.update(chunk)
+            return hasher.hexdigest()
+        except Exception:
+            return None
+
+    @staticmethod
+    def _compute_blur_variance(img: np.ndarray) -> float:
+        """Compute the Laplacian variance to estimate image blurriness."""
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+    @staticmethod
+    def _verify_shelf_grid(image: np.ndarray, key: str) -> Dict[str, Any]:
+        """Verify if the image exhibits the parallel line structural grid typical of store shelves."""
+        if key not in ("left_wall", "centre_wall", "right_wall"):
+            return {"is_genuine_angle": True, "details": "Not a shelf wall"}
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Edge detection
+        edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+        
+        # Hough Line Transform (HoughLinesP detects line segments)
+        # minLineLength=100 ensures we detect long structural shelves, not tiny gaps
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=100, maxLineGap=10)
+        
+        horiz_count = 0
+        slanted_count = 0
+        total_lines = 0
+        
+        if lines is not None:
+            total_lines = len(lines)
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                dx = x2 - x1
+                dy = y2 - y1
+                
+                if dx == 0:
+                    continue  # Vertical lines
+                
+                slope = dy / dx
+                angle_deg = np.arctan(slope) * 180 / np.pi
+                
+                # Almost horizontal (shelves from front-view)
+                if abs(angle_deg) < 10.0:
+                    horiz_count += 1
+                # Slanted shelves (left/right walls)
+                elif 10.0 <= abs(angle_deg) <= 35.0:
+                    slanted_count += 1
+        
+        # We expect at least 3 prominent horizontal or slanted shelf lines
+        # Given the 1280px downscaled image, this is highly reliable for identifying shelves.
+        is_genuine = (horiz_count + slanted_count) >= 3
+        
+        return {
+            "is_genuine_angle": is_genuine,
+            "horizontal_line_count": horiz_count,
+            "slanted_line_count": slanted_count,
+            "total_lines": total_lines,
+            "details": f"Detected {horiz_count} horizontal & {slanted_count} slanted structural shelf lines."
+        }
+

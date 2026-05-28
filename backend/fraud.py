@@ -101,6 +101,49 @@ class FraudDetector:
                 "Extremely poor lighting may indicate a non-functional store.",
                 {"lighting_quality": vf.lighting_quality},
             ))
+
+        # Check diagnostics for blur, duplicates, and genuine angle verification
+        diags = vf.metadata.get("diagnostics", {})
+        
+        # Check duplicate images
+        dup_pairs = []
+        for key, diag in diags.items():
+            dup_of = diag.get("duplicate_of")
+            if dup_of:
+                dup_pairs.append((key, dup_of))
+                
+        if dup_pairs:
+            flags.append(FraudFlag(
+                "VISUAL_IMAGE_DUPLICATED", Severity.CRITICAL,
+                f"Duplicate images detected: {', '.join([f'{k} is identical to {v}' for k, v in dup_pairs])}.",
+                {"duplicate_pairs": dup_pairs}
+            ))
+
+        # Check blurry images
+        blurry_keys = []
+        for key, diag in diags.items():
+            if diag.get("is_blurry", False):
+                blurry_keys.append(key)
+        if blurry_keys:
+            flags.append(FraudFlag(
+                "VISUAL_IMAGE_BLURRY", Severity.HIGH,
+                f"Extremely blurry images uploaded in slots: {', '.join(blurry_keys)}.",
+                {"blurry_keys": blurry_keys}
+            ))
+
+        # Check genuine angle verification
+        mismatched_keys = []
+        for key, diag in diags.items():
+            angle_chk = diag.get("genuine_angle_check", {})
+            if angle_chk and not angle_chk.get("is_genuine_angle", True):
+                mismatched_keys.append(f"{key} ({angle_chk.get('details', '')})")
+        if mismatched_keys:
+            flags.append(FraudFlag(
+                "VISUAL_IMAGE_ANGLE_MISMATCH", Severity.HIGH,
+                f"Images uploaded do not match standard shelf layout/angles: {', '.join(mismatched_keys)}.",
+                {"mismatched_keys": mismatched_keys}
+            ))
+
         return flags
 
     def _check_geo(self, gf: GeoFeatures) -> List[FraudFlag]:
@@ -117,6 +160,13 @@ class FraudDetector:
                 "Market is near-fully saturated.",
                 {"market_saturation": gf.market_saturation},
             ))
+        # Hyper-competitive check
+        if gf.market_saturation > 0.85 and gf.competitor_count > 12:
+            flags.append(FraudFlag(
+                "GEO_HYPER_COMPETITIVE", Severity.MEDIUM,
+                "Hyper-competitive location: High market saturation with numerous competitors.",
+                {"competitor_count": gf.competitor_count, "market_saturation": gf.market_saturation}
+            ))
         return flags
 
     def _check_cross(self, vf: VisualFeatures, gf: GeoFeatures,
@@ -130,4 +180,38 @@ class FraudDetector:
                 "Claimed region tier does not match geo-derived tier.",
                 {"claimed_tier": claimed, "actual_tier": gf.region_tier},
             ))
+
+        # Rent to Revenue Check (CRITICAL)
+        rent = fin.get("rent")
+        inv_summary = vf.metadata.get("inventory_summary", {})
+        inv_value = inv_summary.get("inventory_value_inr", 1000)
+        fm = inv_summary.get("fast_moving_fraction", 0.2)
+        cat_counts = inv_summary.get("category_counts", {})
+        sku_diversity = sum(1 for v in cat_counts.values() if v > 0) / max(len(cat_counts), 1)
+        
+        # Calculate estimated monthly revenue consistent with app.py
+        est_rev = int(
+            inv_value * (1 + fm * 3) * 30 
+            * (0.5 + gf.footfall_index) * (0.8 + sku_diversity * 0.5)
+        )
+        
+        if rent is not None and est_rev > 0:
+            rent_ratio = rent / est_rev
+            if rent_ratio > 0.40:
+                flags.append(FraudFlag(
+                    "CROSS_RENT_TO_REVENUE_CRITICAL", Severity.CRITICAL,
+                    f"Monthly rent (₹{rent:,}) is dangerously high relative to estimated store revenue (₹{est_rev:,}): {rent_ratio*100:.1f}%.",
+                    {"rent": rent, "estimated_revenue": est_rev, "rent_ratio": rent_ratio}
+                ))
+
+        # Claimed Shop Size vs Detected Items Mismatch
+        shop_size = fin.get("shop_size")
+        total_items = inv_summary.get("total_items", 0)
+        if shop_size is not None and shop_size > 800 and total_items < 15:
+            flags.append(FraudFlag(
+                "CROSS_SIZE_TO_ITEMS_MISMATCH", Severity.HIGH,
+                f"Large shop size claimed ({shop_size} sq ft) but extremely few items ({total_items}) were detected.",
+                {"shop_size": shop_size, "product_count": total_items}
+            ))
+
         return flags

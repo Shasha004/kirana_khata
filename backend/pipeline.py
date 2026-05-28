@@ -257,6 +257,7 @@ class KiranaUnderwriter:
             "front_diag": front_diag,
             "image_count": len(loaded.images),
             "all_images_valid": loaded.all_valid,
+            "diagnostics": loaded.diagnostics,
         }
 
         features = VisualFeatures(

@@ -9,3 +9,6 @@ torchvision
 ultralytics
 xgboost
 geopy
+fastapi
+uvicorn
+python-multipart

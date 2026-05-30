@@ -8,6 +8,7 @@ import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useUnderwrite } from '../hooks/useUnderwrite';
 import type { GpsCoordinates } from '../types/underwriting';
+import { storeIllustrationBase64 } from '../components/ui/storeIllustrationBase64';
 
 const REQUIRED_IMAGES = 5;
 
@@ -162,7 +163,7 @@ export default function HomePage() {
           </p>
         </div>
         <img
-          src="/store-illustration.png"
+          src={storeIllustrationBase64}
           alt="Store illustration"
           style={{
             width: 200,

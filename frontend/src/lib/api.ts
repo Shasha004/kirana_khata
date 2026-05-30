@@ -41,7 +41,7 @@ function getMockUnderwrite(req: UnderwriteRequest): any {
   }
 
   // Calculate estimated monthly revenue consistent with backend estimation
-  const est_rev = Math.round(95000 * (1 + 0.3 * 3) * 30 * (0.5 + geo_score) * (0.8 + 0.6 * 0.5));
+  const est_rev = Math.round(25000 * (1 + 0.3 * 3) * 3 * (0.5 + geo_score) * (0.8 + 0.6 * 0.5));
   
   if (rent === undefined || rent === null) {
     rent = 0;

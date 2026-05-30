@@ -42,7 +42,7 @@ def transform_to(output, ml, fin_data):
 
     # Better Monthly Revenue Formula using all signals
     monthly_revenue = int(
-        inventory_value * (1 + fast_moving * 3) * 30 
+        inventory_value * (1 + fast_moving * 3) * 3 
         * (0.5 + geo_score) * (0.8 + sku_diversity * 0.5)
     )
 

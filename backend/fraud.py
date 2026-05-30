@@ -195,6 +195,7 @@ class FraudDetector:
             * (0.5 + gf.footfall_index) * (0.8 + sku_diversity * 0.5)
         )
         
+        # Only run the critical rent-to-revenue check if the rent was explicitly provided by the user (i.e. not None)
         if rent is not None and est_rev > 0:
             rent_ratio = rent / est_rev
             if rent_ratio > 0.40:

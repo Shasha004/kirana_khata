@@ -19,7 +19,7 @@ import { fetchHistory } from './db';
 
 function getMockUnderwrite(req: UnderwriteRequest): any {
   const shop_size = req.optional?.shop_size ?? 200;
-  const rent = req.optional?.rent ?? 0;
+  let rent = req.optional?.rent;
   const years = req.optional?.years_in_operation ?? 2;
 
   // Visual/Geo/Fraud metrics
@@ -42,7 +42,12 @@ function getMockUnderwrite(req: UnderwriteRequest): any {
 
   // Calculate estimated monthly revenue consistent with backend estimation
   const est_rev = Math.round(95000 * (1 + 0.3 * 3) * 30 * (0.5 + geo_score) * (0.8 + 0.6 * 0.5));
-  if (rent > est_rev * 0.40) {
+  
+  if (rent === undefined || rent === null) {
+    rent = 0;
+  }
+
+  if (req.optional?.rent !== undefined && req.optional?.rent !== null && rent > est_rev * 0.40) {
     fraud_flags.push({
       rule_id: "CROSS_RENT_TO_REVENUE_CRITICAL",
       severity: "critical",
@@ -77,8 +82,6 @@ function getMockUnderwrite(req: UnderwriteRequest): any {
   let decision = "REVIEW";
   if (composite_score >= 0.65 && !fraud_flags.some(f => f.severity === "critical")) {
     decision = "APPROVE";
-  } else if (composite_score <= 0.35 || fraud_flags.some(f => f.severity === "critical")) {
-    decision = "REJECT";
   }
 
   let confidence = (1 - Math.abs(visual_score - geo_score)) * (0.5 + 0.5 * Math.abs(composite_score - 0.5));
@@ -251,16 +254,18 @@ export async function submitUnderwrite(
       },
     ];
 
-    // ✅ Loan sizing based on monthly revenue
-    const loanBase = monthly_revenue || ((output.visual_score ?? 0.5) * 50000);
+    // ✅ Loan sizing aligned with monthly net income (profit) for DSCR safety
+    const profitBase = monthly_profit || 10000;
+    const maxEmi = Math.round(profitBase * 0.5);
+    const recommendedLoan = Math.round((maxEmi * 12) / 1.18);
 
     const loan_sizing = {
-      recommended: Math.round(loanBase * 6),
-      minimum: Math.round(loanBase * 3),
-      maximum: Math.round(loanBase * 9),
+      recommended: recommendedLoan,
+      minimum: Math.round(recommendedLoan * 0.5),
+      maximum: Math.round(recommendedLoan * 1.5),
       tenure_months: 12,
       interest_rate: 18,
-      emi: Math.round((loanBase * 6 * 1.18) / 12),
+      emi: maxEmi,
     };
 
     // ✅ Merge pipeline fraud_flags + risk_flags into unified array

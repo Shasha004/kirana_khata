@@ -124,7 +124,9 @@ class KiranaUnderwriter:
         shelf_metrics = self._run_shelf(loaded)
 
         # ── 4. Inventory estimation ──────────────────────────────────
-        inventory = self._inventory.estimate(detections)
+        inventory = self._inventory.estimate(
+            detections, sdi_raw=shelf_metrics.sdi_raw,
+        )
 
         # ── 5. Build VisualFeatures from shelf + inventory + diag ────
         visual_features = self._build_visual_features(

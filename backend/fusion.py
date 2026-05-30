@@ -152,13 +152,9 @@ class FusionModel:
     # -- internals ----------------------------------------------------------
 
     def _decide(self, composite: float, has_critical: bool) -> str:
-        """Map composite score to a decision string."""
-        if has_critical:
-            return "REJECT"
-        if composite >= self._approve:
+        """Map composite score to a decision string. Avoid automatic rejection, routing instead to REVIEW."""
+        if composite >= self._approve and not has_critical:
             return "APPROVE"
-        if composite <= self._reject:
-            return "REJECT"
         return "REVIEW"
 
     @staticmethod

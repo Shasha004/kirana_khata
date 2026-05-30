@@ -152,11 +152,16 @@ class InventoryEstimator:
     # Public API
     # ------------------------------------------------------------------
 
-    def estimate(self, detections: List[Detection]) -> InventoryEstimate:
+    def estimate(
+        self,
+        detections: List[Detection],
+        sdi_raw: Optional[float] = None,
+    ) -> InventoryEstimate:
         """Build an inventory estimate from a list of detections.
 
         Args:
             detections: Output of ``YOLODetector.detect()``.
+            sdi_raw:    Optional Shelf Density Index (sdi_raw) from CV.
 
         Returns:
             A populated ``InventoryEstimate``.
@@ -193,6 +198,26 @@ class InventoryEstimator:
 
         total = len(valid)
 
+        # Apply Shelf Density Index (SDI) correction if provided
+        corrected_total = total
+        if sdi_raw is not None:
+            corrected_total = max(total, int(sdi_raw * 200))
+
+        if corrected_total > total:
+            if total > 0:
+                scale_factor = corrected_total / total
+                for cat in counts:
+                    counts[cat] = int(round(counts[cat] * scale_factor))
+                fast_count = int(round(fast_count * scale_factor))
+                total = sum(counts.values())
+            else:
+                # Fallback: distribute corrected_total across categories
+                counts["staples"] = int(round(corrected_total * 0.40))
+                counts["fmcg"] = int(round(corrected_total * 0.50))
+                counts["high_margin"] = corrected_total - counts["staples"] - counts["fmcg"]
+                total = corrected_total
+                fast_count = counts["fmcg"] + counts["staples"]
+
         # Category ratios.
         ratios = self._compute_ratios(counts, total)
 
@@ -211,14 +236,17 @@ class InventoryEstimator:
             per_detection=per_det,
             diagnostics={
                 "raw_detection_count": len(detections),
-                "filtered_count": total,
+                "filtered_count": len(valid),
+                "corrected_count": total,
                 "fast_moving_count": fast_count,
+                "sdi_raw_applied": sdi_raw is not None,
+                "sdi_raw_value": sdi_raw,
             },
         )
 
         logger.info(
-            "Inventory estimate: %d items, ₹%.0f, ratios=%s, fast=%.2f",
-            total, value,
+            "Inventory estimate: %d items (corrected from %d), ₹%.0f, ratios=%s, fast=%.2f",
+            total, len(valid), value,
             {k: round(v, 2) for k, v in ratios.items()},
             fm_frac,
         )

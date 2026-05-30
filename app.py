@@ -30,7 +30,7 @@ def transform_to(output, ml, fin_data):
     sdi_raw = shelf.get("sdi_raw", 0.5)
 
     # User inputs
-    rent = fin_data.get("rent") or 0
+    rent = fin_data.get("rent")
     shop_size = fin_data.get("shop_size") or 200
     years = fin_data.get("years_in_operation") or 2
 
@@ -45,6 +45,10 @@ def transform_to(output, ml, fin_data):
         inventory_value * (1 + fast_moving * 3) * 30 
         * (0.5 + geo_score) * (0.8 + sku_diversity * 0.5)
     )
+
+    # Rent fallback to 0 if not provided
+    if rent is None:
+        rent = 0
 
     # 2. Dynamic Uncertainty Bands
     confidence = output.get("confidence", 0.72)

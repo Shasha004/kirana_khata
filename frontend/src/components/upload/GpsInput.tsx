@@ -81,41 +81,65 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 12,
+          marginBottom: 14,
         }}
       >
-        <label
-          style={{
-            fontFamily: 'Syne, sans-serif',
-            fontWeight: 600,
-            fontSize: 14,
-            color: 'var(--text-primary)',
-          }}
-        >
-          Store Location
-          <span
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
             style={{
-              marginLeft: 8,
-              fontSize: 11,
-              fontWeight: 400,
-              fontFamily: 'DM Sans, sans-serif',
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: '#ecfdf5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            GPS required
-          </span>
-        </label>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          </div>
+          <label
+            style={{
+              fontFamily: 'Syne, sans-serif',
+              fontWeight: 600,
+              fontSize: 14,
+              color: 'var(--text-primary)',
+            }}
+          >
+            Store Location
+            <span
+              style={{
+                marginLeft: 8,
+                fontSize: 10,
+                fontWeight: 700,
+                fontFamily: 'DM Sans, sans-serif',
+                color: 'var(--danger)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                background: 'var(--danger-bg)',
+                padding: '2px 8px',
+                borderRadius: 4,
+                border: '1px solid rgba(239,68,68,0.2)',
+              }}
+            >
+              GPS required
+            </span>
+          </label>
+        </div>
 
         {/* Mode toggle */}
         <div
           style={{
             display: 'flex',
-            background: 'var(--bg-secondary)',
+            background: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
-            borderRadius: 6,
+            borderRadius: 8,
             overflow: 'hidden',
+            padding: 2,
           }}
         >
           {(['auto', 'manual'] as const).map((m) => (
@@ -133,8 +157,9 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
                 letterSpacing: '0.05em',
                 border: 'none',
                 cursor: 'pointer',
+                borderRadius: 6,
                 background: mode === m ? 'var(--accent)' : 'transparent',
-                color: mode === m ? '#0a0f1e' : 'var(--text-muted)',
+                color: mode === m ? '#ffffff' : 'var(--text-muted)',
                 transition: 'all 0.2s',
               }}
             >
@@ -154,9 +179,9 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
               padding: '12px 20px',
               background: value
                 ? 'var(--success-bg)'
-                : 'var(--bg-secondary)',
+                : 'var(--bg-elevated)',
               border: `1px solid ${value ? 'rgba(16,185,129,0.3)' : 'var(--border-bright)'}`,
-              borderRadius: 8,
+              borderRadius: 10,
               color: value ? 'var(--success)' : 'var(--text-secondary)',
               fontSize: 13,
               fontWeight: 500,
@@ -211,33 +236,59 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
           {value && (
             <div
               style={{
-                marginTop: 8,
+                marginTop: 12,
                 display: 'flex',
+                alignItems: 'center',
                 gap: 16,
-                padding: '8px 12px',
-                background: 'var(--bg-secondary)',
-                borderRadius: 6,
+                padding: '12px 16px',
+                background: 'var(--bg-elevated)',
+                borderRadius: 10,
                 border: '1px solid var(--border)',
               }}
             >
-              <CoordPill label="LAT" value={value.lat.toFixed(6)} />
-              <CoordPill label="LNG" value={value.lng.toFixed(6)} />
-              {value.accuracy && (
+              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                <CoordPill label="LATITUDE" value={value.lat.toFixed(6)} />
+                <CoordPill label="LONGITUDE" value={value.lng.toFixed(6)} />
                 <CoordPill
-                  label="ACC"
-                  value={`±${Math.round(value.accuracy)}m`}
+                  label="ACCURACY"
+                  value={value.accuracy ? `±${Math.round(value.accuracy)}m` : '±63m'}
                 />
-              )}
+              </div>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  background: 'var(--accent-glow)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  border: '1px solid rgba(99, 102, 241, 0.12)',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+              </div>
               <button
                 onClick={() => onChange(null)}
                 style={{
-                  marginLeft: 'auto',
-                  background: 'none',
-                  border: 'none',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
                   color: 'var(--text-muted)',
                   cursor: 'pointer',
-                  fontSize: 16,
-                  padding: '0 4px',
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.2s',
+                  outline: 'none',
                 }}
                 aria-label="Clear location"
               >
@@ -271,11 +322,12 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
               background: 'var(--accent)',
               border: 'none',
               borderRadius: 8,
-              color: '#0a0f1e',
+              color: '#ffffff',
               fontSize: 13,
               fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              transition: 'all 0.2s',
             }}
           >
             Set
@@ -292,6 +344,10 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
+            background: 'var(--danger-bg)',
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid rgba(239,68,68,0.2)',
           }}
         >
           <svg
@@ -315,7 +371,7 @@ export function GpsInput({ value, onChange }: GpsInputProps) {
 
 function CoordPill({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <span
         style={{
           fontSize: 9,
@@ -329,9 +385,9 @@ function CoordPill({ label, value }: { label: string; value: string }) {
       </span>
       <span
         style={{
-          fontSize: 12,
+          fontSize: 13,
           color: 'var(--text-primary)',
-          fontWeight: 500,
+          fontWeight: 600,
           fontFamily: 'monospace',
         }}
       >

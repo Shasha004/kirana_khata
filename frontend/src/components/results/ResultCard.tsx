@@ -407,7 +407,7 @@ export function ResultCard({ result }: ResultCardProps) {
       <div
         style={{
           marginTop: 24,
-          background: '#0d1117',
+          background: '#f8fafc',
           border: '1px solid var(--border)',
           borderRadius: 12,
           overflow: 'hidden',
@@ -416,7 +416,7 @@ export function ResultCard({ result }: ResultCardProps) {
         <div
           style={{
             padding: '12px 16px',
-            background: 'rgba(255,255,255,0.03)',
+            background: 'var(--bg-elevated)',
             borderBottom: '1px solid var(--border)',
             fontSize: 12,
             fontWeight: 700,
@@ -435,7 +435,7 @@ export function ResultCard({ result }: ResultCardProps) {
           Raw Analysis Output
         </div>
         <div style={{ padding: 20, overflowX: 'auto' }}>
-          <pre style={{ margin: 0, fontSize: 13, fontFamily: 'monospace', color: '#e6edf3' }}>
+          <pre style={{ margin: 0, fontSize: 13, fontFamily: 'monospace', color: 'var(--text-primary)' }}>
             {JSON.stringify(
               {
                 daily_sales_range: [

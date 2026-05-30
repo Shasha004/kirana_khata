@@ -212,7 +212,7 @@ export default function HistoryPage() {
                 cursor: 'pointer',
                 textTransform: 'capitalize',
                 background: filter === f ? 'var(--accent)' : 'transparent',
-                color: filter === f ? '#0a0f1e' : 'var(--text-muted)',
+                color: filter === f ? '#ffffff' : 'var(--text-muted)',
                 transition: 'all 0.2s',
               }}
             >

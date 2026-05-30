@@ -101,38 +101,76 @@ export default function HomePage() {
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 24px 80px' }}>
       {/* Page title */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <div className="accent-line" />
-          <span
+      <div style={{ marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'var(--accent)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 12,
+              background: 'var(--accent-glow)',
+              padding: '4px 12px 4px 4px',
+              borderRadius: 20,
+              border: '1px solid rgba(99, 102, 241, 0.12)',
             }}
           >
-            Cash Flow Underwriting
-          </span>
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                <polyline points="16 7 22 7 22 13" />
+              </svg>
+            </div>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
+            >
+              Cash Flow Underwriting
+            </span>
+          </div>
+          <h1
+            style={{
+              fontFamily: 'Syne, sans-serif',
+              fontSize: 36,
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.04em',
+              lineHeight: 1.1,
+              marginBottom: 10,
+            }}
+          >
+            New Store Assessment
+          </h1>
+          <p style={{ fontSize: 15, color: 'var(--text-muted)', maxWidth: 520 }}>
+            Upload store images and capture GPS location. AI analyzes inventory density,
+            footfall signals, and store health to generate an underwriting decision.
+          </p>
         </div>
-        <h1
+        <img
+          src="/store-illustration.png"
+          alt="Store illustration"
           style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: 36,
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.04em',
-            lineHeight: 1.1,
-            marginBottom: 10,
+            width: 200,
+            height: 200,
+            objectFit: 'contain',
+            flexShrink: 0,
           }}
-        >
-          New Store Assessment
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-muted)', maxWidth: 520 }}>
-          Upload store images and capture GPS location. AI analyzes inventory density,
-          footfall signals, and store health to generate an underwriting decision.
-        </p>
+        />
       </div>
 
       <div
@@ -150,7 +188,7 @@ export default function HomePage() {
               className="card"
               style={{
                 padding: '36px 24px',
-                background: 'rgba(10, 15, 30, 0.4)',
+                background: 'rgba(255, 255, 255, 0.85)',
                 backdropFilter: 'blur(16px)',
                 border: '1px solid var(--border-bright)',
                 borderRadius: 16,
@@ -282,7 +320,7 @@ export default function HomePage() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: 9,
-                        color: s.done || s.active ? '#0a0f1e' : 'var(--text-muted)',
+                        color: s.done || s.active ? '#ffffff' : 'var(--text-muted)',
                         fontWeight: 700
                       }}
                     >
@@ -359,36 +397,58 @@ export default function HomePage() {
 
               {/* Optional Details Card */}
               <div className="card" style={{ padding: 24 }}>
-                <div style={{ fontWeight: 600, marginBottom: 16 }}>Store Details (Optional)</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: '#fffbeb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  </div>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>Store Details</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto', opacity: 0.7 }}>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Shop Size (sq ft)</label>
+                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>Shop Size (sq ft)</label>
                     <input
                       type="number"
                       value={shopSize}
                       onChange={(e) => setShopSize(e.target.value)}
                       placeholder="e.g. 200"
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Monthly Rent (₹)</label>
+                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>Monthly Rent (₹)</label>
                     <input
                       type="number"
                       value={rent}
                       onChange={(e) => setRent(e.target.value)}
                       placeholder="e.g. 15000"
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s' }}
                     />
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Years in Operation</label>
+                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>Years in Operation</label>
                     <input
                       type="number"
                       value={yearsInOperation}
                       onChange={(e) => setYearsInOperation(e.target.value)}
                       placeholder="e.g. 5"
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s' }}
                     />
                   </div>
                 </div>
@@ -453,7 +513,7 @@ export default function HomePage() {
                     background: isLoading ? 'var(--accent-dim)' : 'var(--accent)',
                     border: 'none',
                     borderRadius: 10,
-                    color: '#0a0f1e',
+                    color: '#ffffff',
                     fontFamily: 'Syne, sans-serif',
                     fontSize: 15,
                     fontWeight: 800,
@@ -484,7 +544,7 @@ export default function HomePage() {
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#0a0f1e"
+                    stroke="#ffffff"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   >
@@ -625,7 +685,7 @@ export default function HomePage() {
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   ) : item.partial ? (
-                    <LoadingSpinner size={12} color="#0a0f1e" />
+                    <LoadingSpinner size={12} color="#ffffff" />
                   ) : (
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
                       {item.step}
@@ -674,12 +734,12 @@ export default function HomePage() {
               What We Analyze
             </div>
             {[
-              { icon: '📦', label: 'Shelf Density Index (SDI)' },
-              { icon: '🏷️', label: 'SKU Diversity & Categories' },
-              { icon: '🌍', label: 'Geo-Intelligence & Footfall' },
-              { icon: '💸', label: 'Fast-Moving Inventory Value' },
-              { icon: '🛡️', label: 'Cross-Signal Fraud Validation' },
-              { icon: '📍', label: 'GPS vs Regional Tier Check' },
+              { icon: '📦', label: 'Shelf Density Index (SDI)', bg: 'var(--accent-glow)' },
+              { icon: '🏷️', label: 'SKU Diversity & Categories', bg: '#ecfdf5' },
+              { icon: '🌍', label: 'Geo-Intelligence & Footfall', bg: '#eff6ff' },
+              { icon: '💸', label: 'Fast-Moving Inventory Value', bg: '#fffbeb' },
+              { icon: '🛡️', label: 'Cross-Signal Fraud Validation', bg: '#fef2f2' },
+              { icon: '📍', label: 'GPS vs Regional Tier Check', bg: '#f5f3ff' },
             ].map((item) => (
               <div
                 key={item.label}
@@ -693,7 +753,17 @@ export default function HomePage() {
                   color: 'var(--text-secondary)',
                 }}
               >
-                <span style={{ fontSize: 14 }}>{item.icon}</span>
+                <span style={{
+                  fontSize: 13,
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: item.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>{item.icon}</span>
                 {item.label}
               </div>
             ))}

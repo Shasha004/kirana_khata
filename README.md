@@ -23,6 +23,19 @@
 
 ---
 
+---
+title: Kirana Khata
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
+# Kirana Khata
+
+
+
 ## 🏆 Key Innovations
 
 1. **Multi-Modal Financial Fusion:** Computes highly accurate Monthly Revenue by mathematically fusing YOLOv8 Inventory Value, Fast-Moving Goods ratios, SKU Diversity, and Geo-Spatial footfall proxies.

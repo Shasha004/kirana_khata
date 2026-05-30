@@ -1,3 +1,13 @@
+---
+title: Kirana Khata
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
+
 # Kirana Khata Underwriting Engine 🚀
 
 > Advanced Multi-Modal AI for remote cash-flow underwriting of India's Kirana stores. 
@@ -21,15 +31,6 @@
 ### Results Output
 ![Results](assets/Results.png)
 
----
-
----
-title: Kirana Khata
-emoji: 🚀
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
 ---
 
 # Kirana Khata

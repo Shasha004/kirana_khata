@@ -19,7 +19,7 @@ import { fetchHistory } from './db';
 
 function getMockUnderwrite(req: UnderwriteRequest): any {
   const shop_size = req.optional?.shop_size ?? 200;
-  const rent = req.optional?.rent ?? 15000;
+  const rent = req.optional?.rent ?? 0;
   const years = req.optional?.years_in_operation ?? 2;
 
   // Visual/Geo/Fraud metrics
@@ -159,9 +159,9 @@ export async function submitUnderwrite(
       formData.append("lat", req.gps.lat.toString());
       formData.append("lng", req.gps.lng.toString());
 
-      if (req.optional?.shop_size) formData.append("shop_size", req.optional.shop_size.toString());
-      if (req.optional?.rent) formData.append("rent", req.optional.rent.toString());
-      if (req.optional?.years_in_operation) formData.append("years_in_operation", req.optional.years_in_operation.toString());
+      if (req.optional?.shop_size !== undefined && req.optional.shop_size !== null) formData.append("shop_size", req.optional.shop_size.toString());
+      if (req.optional?.rent !== undefined && req.optional.rent !== null) formData.append("rent", req.optional.rent.toString());
+      if (req.optional?.years_in_operation !== undefined && req.optional.years_in_operation !== null) formData.append("years_in_operation", req.optional.years_in_operation.toString());
 
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
       const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;

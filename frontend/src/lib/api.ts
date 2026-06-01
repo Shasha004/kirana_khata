@@ -255,25 +255,20 @@ export async function submitUnderwrite(
     ];
 
     // ✅ Custom Loan Sizing Algorithm (complying with banking standard formulas)
-    // Formula: Eligible Loan = min(4 * Monthly Revenue, 3 * Annual Profit, EMI-Based Eligibility) * Risk Score
+    // Formula: Eligible Loan = min(4 * Monthly Revenue, 3 * Annual Profit) * Risk Score
     const revenueBase = monthly_revenue || 100000;
     const profitBase = monthly_profit || 20000;
 
     // 1. 4x Monthly Revenue Cap
     const revenueCap = 4 * revenueBase;
 
-    // 2. 3x Annual Profit Cap
-    const profitCap = 3 * (profitBase * 12);
+    // 2. 3x Annual Profit Cap (Annual Profit = 12 * Monthly Profit)
+    const profitCap = 3 * (12 * profitBase);
 
-    // 3. EMI-Based Eligibility (FOIR = 50%, tenure = 12 months, interest rate = 18% annual)
-    const foir = 0.5;
-    const maxEmi = Math.round(profitBase * foir);
-    const emiEligibility = Math.round((maxEmi * 12) / 1.18);
+    // 3. Base Eligible Loan (minimum of Revenue Cap and Profit Cap)
+    const baseEligibleLoan = Math.min(revenueCap, profitCap);
 
-    // 4. Base Eligible Loan (minimum of the three constraints)
-    const baseEligibleLoan = Math.min(revenueCap, profitCap, emiEligibility);
-
-    // 5. Risk Score Multiplier (ranges from 0.5 to 1.2 based on Credit, Age, Visual, and Fraud)
+    // 4. Risk Score Multiplier (ranges from 0.5 to 1.2 based on Credit, Age, Visual, and Fraud)
     const mlOutputs = raw.ml_outputs || {};
     const creditScoreVal = mlOutputs.credit_score || 600;
     const yearsInOperation = req.optional?.years_in_operation ?? 2;
@@ -297,13 +292,16 @@ export async function submitUnderwrite(
     // Recommended Loan Amount
     const recommendedLoan = Math.round(baseEligibleLoan * riskMultiplier);
 
+    // Calculate actual monthly EMI for recommended loan (tenure = 12 months, interest rate = 18% annual flat rate)
+    const emi = Math.round((recommendedLoan * 1.18) / 12);
+
     const loan_sizing = {
       recommended: recommendedLoan,
       minimum: Math.round(recommendedLoan * 0.5),
       maximum: Math.round(recommendedLoan * 1.5),
       tenure_months: 12,
       interest_rate: 18,
-      emi: maxEmi,
+      emi: emi,
     };
 
     // ✅ Merge pipeline fraud_flags + risk_flags into unified array

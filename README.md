@@ -227,14 +227,18 @@ Outputs: `total_items`, `inventory_value_inr`, `category_ratios`, `fast_moving_f
 
 ### 6. Geo Feature Extraction (`geo.py`)
 
-`GeoFeatureExtractor` extracts 4 data classes from coordinates:
+`GeoFeatureExtractor` connects live to OpenStreetMap (OSM) public Overpass and Nominatim APIs to extract high-precision geospatial metrics:
 
-- **`PopulationRings`** — estimated population in 0–200 m, 200–500 m, 500–1000 m bands
-- **`POICounts`** — schools, hospitals, bus stops, temples, markets, banks
-- **`road_type`** — highway / arterial / collector / local / residential
-- **`CompetitionInfo`** — kirana count (500 m / 1 km), supermarket count, nearest competitor distance
+- **`Reverse Geocoding & Tiering (Nominatim)`** — Resolves coordinate to PIN code, city, town, or state, applying city-to-tier classification (Tier-1: Mumbai, Delhi, Bengaluru, etc., Tier-2: Jaipur, Lucknow, Gurgaon, etc., Tier-3: others).
+- **`POICounts`** — Schools/colleges, hospitals/clinics, bus stops, religious places, banks/ATMs, and marketplaces within a highly-localized **300m search radius** of concern.
+- **`road_type`** — Highway / arterial / collector / local / residential road mapping near the coordinate.
+- **`CompetitionInfo`** — Crows-flight count of general convenience/kirana stores, supermarkets, and kiosks within 300m, including exact distance (in meters) to the nearest competitor.
+- **`PopulationRings`** — High-density urban population estimates across three concentric bands (0-200m, 200-500m, 500-1000m) scaled by building count density.
 
-> Default implementation uses a **deterministic mock** seeded by MD5 of coordinates (same lat/lng always produces same data). Override `_fetch_population`, `_fetch_poi`, `_fetch_road_type`, `_fetch_competition` to wire real APIs (WorldPop, OSM Overpass, Google Places).
+> **Production-Grade API Integration**:
+> - **Compliance & Headers**: Queries are sent with a compliant, honest User-Agent header (`KiranaKhataGeospatialProcessor/1.0`) to avoid security blocks.
+> - **4-Way Mirror Auto-Failover**: Auto-rotates queries across 4 public Overpass API mirrors (`overpass-api.de`, `kumi.systems`, `lz4.overpass-api.de`, `z.overpass-api.de`) and handles POST raw, POST form-data, and GET query fallbacks.
+> - **Bulletproof Offline/Rate-Limit Fallback**: If all mirrors are offline or rate-limited, the system falls back to a deterministic location-seeded fallback algorithm, maintaining 100% pipeline uptime.
 
 ### 7. Geo Scoring (`geo_processor.py`)
 
@@ -294,18 +298,57 @@ Two XGBoost-backed models (gracefully fall back to sklearn `GradientBoostingRegr
 
 `ModelRegistry` auto-loads saved `.pkl` files from `models/` directory if present.
 
-### Financial Transformation (`app.py → transform_to()`)
+### Financial Transformation & Underwriting (`app.py → transform_to()`)
 
-After the pipeline, `app.py` runs `transform_to()` to produce lender-friendly output:
+After the pipeline completes, `app.py` runs `transform_to()` to produce lender-friendly financial ranges:
 
 ```python
-# Multi-modal fusion of inventory, velocity, geo-score, and SKU diversity
-monthly_revenue = int(inventory_value × (1 + fast_moving_fraction × 3) × 30 × (0.5 + geo_score) × (0.8 + sku_diversity × 0.5))
+# Multi-modal fusion of inventory value, FMCG velocity, geo score, and SKU diversity
+monthly_revenue = int(inventory_value * (1 + fast_moving_fraction * 3) * 30 * (0.5 + geo_score) * (0.8 + sku_diversity * 0.5))
 
-# Dynamic uncertainty (widens if confidence score is low)
-uncertainty_margin = 0.4 - (confidence × 0.3)
-revenue_range   = [monthly_revenue × (1 - uncertainty_margin), monthly_revenue × (1 + uncertainty_margin)]
+# Dynamic uncertainty margins (widen or narrow based on the composite confidence score)
+uncertainty_margin = 0.4 - (confidence * 0.3)
+revenue_range = [monthly_revenue * (1 - uncertainty_margin), monthly_revenue * (1 + uncertainty_margin)]
+
+# Monthly profit midpoint estimation (approx. 15% to 22% of revenue minus store rent)
+income_range = [
+    max(1000, round(revenue_range[0] * 0.15) - rent),
+    max(2000, round(revenue_range[1] * 0.22) - rent),
+]
 ```
+
+---
+
+## 📊 Underwriting & Loan Sizing Engine
+
+The underwriting engine (`frontend/src/lib/api.ts`) applies a professional commercial bank-standard loan sizing formula to calculate the exact recommended loan capacity, based strictly on **Monthly Revenue** and **Annual Profit** top/bottom-line limits (ignoring any cash-flow EMI caps from the eligibility criteria):
+
+$$\text{Eligible Loan} = \min(\text{Revenue Cap},\ \text{Profit Cap}) \times \text{Risk Score Multiplier}$$
+
+### 1. Sizing Limits & Caps
+- **Revenue Cap (4x Monthly Revenue)**: Capped at four times the monthly revenue midpoint.
+  $$\text{Revenue Cap} = 4 \times \text{Monthly Revenue}$$
+- **Profit Cap (3x Annual Profit)**: Capped at three times the annual profit midpoint ($36 \times$ monthly profit).
+  $$\text{Profit Cap} = 3 \times (\text{Monthly Profit} \times 12) = 36 \times \text{Monthly Profit}$$
+- **Base Eligible Loan**: The tighter of the two caps: $\min(\text{Revenue Cap},\ \text{Profit Cap})$.
+
+### 2. Multi-Modal Risk Score Multiplier (`0.5` to `1.2`)
+Calculates a composite store quality score ($Q \in [0, 1]$) based on credit history, store operational age, visual density parameters, and fraud resilience:
+
+- **Credit Score Factor ($C$)**: Scored from `0.0` to `1.0` based on XGBoost-derived score (300-900).
+- **Business Age Factor ($A$)**: Scored from `0.0` to `1.0` based on years in operation (capped at 5 years).
+- **Visual SDI Factor ($V$)**: Scored from `0.0` to `1.0` based on shelf density and uniformity.
+- **Fraud Resilience ($F$)**: Scored from `0.0` to `1.0` based on rule penalty deductions (`1 - fraud_score`).
+
+$$\text{Composite Quality } (Q) = 0.3 \times C + 0.2 \times A + 0.3 \times V + 0.2 \times F$$
+$$\text{Risk Score Multiplier} = 0.5 + 0.7 \times Q$$
+
+$$\text{Recommended Loan} = \text{Base Eligible Loan} \times \text{Risk Score Multiplier}$$
+
+### 3. Monthly EMI Repayment
+The Monthly EMI is calculated directly from the recommended loan amount, assuming a standard **12-month tenure** and a **18% annual flat interest rate**:
+
+$$\text{Monthly EMI} = \text{Math.round}\left(\frac{\text{Recommended Loan} \times 1.18}{12}\right)$$
 
 ---
 
@@ -527,16 +570,22 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Fraud Detection Reference
 
-| Flag | Severity | Trigger condition |
-|------|----------|------------------|
-| `VISUAL_SHELF_EMPTY` | HIGH | `shelf_occupancy < 0.10` |
-| `VISUAL_LOW_PRODUCTS` | MEDIUM | `product_count < 5` |
-| `VISUAL_POOR_LIGHTING` | LOW | `lighting_quality < 0.15` |
-| `GEO_OVERSATURATED` | MEDIUM | `competitor_count > 15` |
-| `GEO_MARKET_SATURATED` | HIGH | `market_saturation > 0.90` |
-| `inventory_footfall_mismatch` | MEDIUM | `inventory_value > 50000` AND `geo_score < 0.30` |
-| `claimed_size_vs_inventory_mismatch` | HIGH | `shop_size > 800` AND `total_items < 15` |
-| `CROSS_TIER_MISMATCH` | MEDIUM | Claimed region tier better than geo-derived |
+The underwriting engine applies automated fraud rules across visual, geospatial, and financial inputs. Flags are categorized by severity (LOW, MEDIUM, HIGH, CRITICAL) and directly penalty-deduct the composite quality score:
+
+| Flag Code | Severity | Category | Trigger Condition / Description |
+|-----------|----------|----------|--------------------------------|
+| `VISUAL_SHELF_EMPTY` | HIGH | Visual | `shelf_occupancy < 0.10` (store center wall shelf is bare) |
+| `VISUAL_LOW_PRODUCTS` | MEDIUM | Visual | `product_count < 5` (fewer than 5 items detected in the entire shop) |
+| `VISUAL_POOR_LIGHTING` | LOW | Visual | `lighting_quality < 0.15` (mean image brightness is low) |
+| `VISUAL_IMAGE_DUPLICATED` | CRITICAL | Visual | Identical images uploaded to multiple slots (catches basic upload bypasses) |
+| `VISUAL_IMAGE_BLURRY` | HIGH | Visual | Laplacian variance of image < 100 (catches poor quality or motion-blurred uploads) |
+| `VISUAL_IMAGE_ANGLE_MISMATCH` | HIGH | Visual | Perspective or skew angle of center shelf wall image > 25° |
+| `GEO_OVERSATURATED` | MEDIUM | Geospatial | `competitor_count > 15` general convenience / kirana stores within 300m |
+| `GEO_MARKET_SATURATED` | HIGH | Geospatial | `market_saturation > 0.90` (local catchment market is fully saturated) |
+| `GEO_HYPER_COMPETITIVE` | MEDIUM | Geospatial | `market_saturation > 0.85` AND `competitor_count > 12` within 300m |
+| `CROSS_TIER_MISMATCH` | MEDIUM | Cross-Signal | Claimed city tier is better/higher than geo-derived Nominatim tier |
+| `CROSS_RENT_TO_REVENUE_CRITICAL` | CRITICAL | Cross-Signal | `rent / estimated_revenue > 0.40` (rent is dangerously high relative to revenue) |
+| `CROSS_SIZE_TO_ITEMS_MISMATCH` | HIGH | Cross-Signal | Claimed shop size > 800 sq ft, but YOLOv8 detected total items < 15 |
 
 ---
 

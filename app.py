@@ -90,10 +90,10 @@ def transform_to(output, ml, fin_data):
         risk_flags.append("inventory_footfall_mismatch")
 
     # 🔥 Shop Size Fraud Check: Claiming 1000 sqft but detecting almost no products
-    if shop_size > 800 and inventory.get("raw_detection_count", 0) < 15:
+    if shop_size > 800 and inventory.get("total_items", 0) < 15:
         risk_flags.append("claimed_size_vs_inventory_mismatch")
 
-    if inventory.get("raw_detection_count", 0) < 10:
+    if inventory.get("total_items", 0) < 10:
         risk_flags.append("limited_view_coverage")
 
     if len(output.get("fraud_flags", [])) > 0:

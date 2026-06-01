@@ -89,12 +89,11 @@ class FraudDetector:
                 "Shelf occupancy is suspiciously low.",
                 {"shelf_occupancy": vf.shelf_occupancy},
             ))
-        raw_count = vf.metadata.get("inventory_summary", {}).get("raw_detection_count", 0)
-        if raw_count < self._min_products:
+        if vf.product_count < self._min_products:
             flags.append(FraudFlag(
                 "VISUAL_LOW_PRODUCTS", Severity.MEDIUM,
-                f"YOLOv8 model detected very few products ({raw_count}) in the store images.",
-                {"raw_detection_count": raw_count},
+                f"YOLOv8 model detected very few products ({vf.product_count}) in the store images.",
+                {"raw_detection_count": vf.product_count},
             ))
         if vf.lighting_quality < 0.15:
             flags.append(FraudFlag(

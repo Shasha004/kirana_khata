@@ -254,10 +254,48 @@ export async function submitUnderwrite(
       },
     ];
 
-    // ✅ Loan sizing aligned with monthly net income (profit) for DSCR safety
-    const profitBase = monthly_profit || 10000;
-    const maxEmi = Math.round(profitBase * 0.5);
-    const recommendedLoan = Math.round((maxEmi * 12) / 1.18);
+    // ✅ Custom Loan Sizing Algorithm (complying with banking standard formulas)
+    // Formula: Eligible Loan = min(4 * Monthly Revenue, 3 * Annual Profit, EMI-Based Eligibility) * Risk Score
+    const revenueBase = monthly_revenue || 100000;
+    const profitBase = monthly_profit || 20000;
+
+    // 1. 4x Monthly Revenue Cap
+    const revenueCap = 4 * revenueBase;
+
+    // 2. 3x Annual Profit Cap
+    const profitCap = 3 * (profitBase * 12);
+
+    // 3. EMI-Based Eligibility (FOIR = 50%, tenure = 12 months, interest rate = 18% annual)
+    const foir = 0.5;
+    const maxEmi = Math.round(profitBase * foir);
+    const emiEligibility = Math.round((maxEmi * 12) / 1.18);
+
+    // 4. Base Eligible Loan (minimum of the three constraints)
+    const baseEligibleLoan = Math.min(revenueCap, profitCap, emiEligibility);
+
+    // 5. Risk Score Multiplier (ranges from 0.5 to 1.2 based on Credit, Age, Visual, and Fraud)
+    const mlOutputs = raw.ml_outputs || {};
+    const creditScoreVal = mlOutputs.credit_score || 600;
+    const yearsInOperation = req.optional?.years_in_operation ?? 2;
+
+    // Scale Credit Factor (0.0 to 1.0)
+    const creditFactor = Math.max(0, Math.min((creditScoreVal - 300) / 600, 1.0));
+
+    // Scale Age Factor (0.0 to 1.0)
+    const ageFactor = Math.max(0, Math.min(yearsInOperation / 5.0, 1.0));
+
+    // Scale Visual & Fraud Factor (0.0 to 1.0)
+    const visualFactor = output.visual_score ?? 0.7;
+    const fraudFactor = Math.max(0, 1.0 - (output.fraud_score ?? 0.05));
+
+    // Composite Quality
+    const quality = 0.3 * creditFactor + 0.2 * ageFactor + 0.3 * visualFactor + 0.2 * fraudFactor;
+
+    // Risk Multiplier scaled from 0.5 to 1.2
+    const riskMultiplier = 0.5 + 0.7 * quality;
+
+    // Recommended Loan Amount
+    const recommendedLoan = Math.round(baseEligibleLoan * riskMultiplier);
 
     const loan_sizing = {
       recommended: recommendedLoan,

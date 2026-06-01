@@ -312,8 +312,12 @@ class GeoFeatureExtractor:
         total_pop = pop.total
 
         # Derive population density (people / km²) from ring data.
-        # Area of 1 km circle ≈ π km².
-        area_km2 = math.pi * (1.0 ** 2)
+        # Since we changed the area of concern to 300m, the catchment area is a 300m radius circle.
+        # Area of 300m circle ≈ π * (0.3 ** 2) km² ≈ 0.2827 km².
+        # If in mock mode (which generates population for a 1km ring), we fall back to 1.0 km radius.
+        is_mock = result.metadata.get("source") == "mock"
+        radius_km = 1.0 if is_mock else 0.3
+        area_km2 = math.pi * (radius_km ** 2)
         pop_density = total_pop / area_km2 if area_km2 > 0 else 0.0
 
         # Footfall index: heuristic from POI mix + population.
@@ -322,17 +326,22 @@ class GeoFeatureExtractor:
             poi.schools + poi.hospitals + poi.bus_stops
             + poi.temples + poi.markets + poi.banks
         )
+        
+        pop_threshold = 5000.0 if is_mock else 500.0
+        poi_threshold = 15.0 if is_mock else 4.0
+        
         footfall_raw = (
-            0.4 * min(total_pop / 5000.0, 1.0)
-            + 0.3 * min(poi_total / 15.0, 1.0)
+            0.4 * min(total_pop / pop_threshold, 1.0)
+            + 0.3 * min(poi_total / poi_threshold, 1.0)
             + 0.3 * (1.0 if result.road_type in ("arterial", "collector") else
                       0.7 if result.road_type == "highway" else 0.4)
         )
         footfall_index = max(0.0, min(footfall_raw, 1.0))
 
         # Market saturation: heuristic from competition density.
+        comp_threshold = 25.0 if is_mock else 5.0
         sat_raw = min(
-            (comp.kirana_count_1km + comp.supermarket_count * 3) / 25.0,
+            (comp.kirana_count_1km + comp.supermarket_count * 3) / comp_threshold,
             1.0,
         )
 
@@ -375,7 +384,7 @@ class GeoFeatureExtractor:
     ) -> PopulationRings:
         """Fetch ring-based population estimates.
 
-        Resolves dynamically using building density when in precise mode.
+        Resolves dynamically using building density when in precise mode (up to 300m).
         """
         if not self._use_mock and self._raw_data:
             osm_pop_0_200m = 0
@@ -402,10 +411,8 @@ class GeoFeatureExtractor:
 
                         if dist <= 200:
                             osm_pop_0_200m += p_count
-                        elif dist <= 500:
+                        elif dist <= 300: # Capped at 300m
                             osm_pop_200_500m += p_count
-                        elif dist <= 1000:
-                            osm_pop_500_1000m += p_count
 
             # Blend with mock base to guarantee a robust minimum catchment density
             mock_pop = self._fetch_population_mock(lat, lon, seed)
@@ -433,7 +440,7 @@ class GeoFeatureExtractor:
     ) -> POICounts:
         """Fetch nearby POI counts.
 
-        Resolves dynamically using OpenStreetMap amenities when in precise mode.
+        Resolves dynamically using OpenStreetMap amenities when in precise mode (up to 300m).
         """
         if not self._use_mock and self._raw_data:
             schools = 0
@@ -456,15 +463,13 @@ class GeoFeatureExtractor:
                 shop = tags.get("shop", "")
                 landuse = tags.get("landuse", "")
 
-                if dist <= 1000:
+                if dist <= 300: # Consistent with 300m area of concern
                     if amenity in ("school", "college", "university"):
                         schools += 1
                     if amenity in ("hospital", "clinic"):
                         hospitals += 1
                     if amenity == "marketplace" or shop == "mall" or landuse in ("commercial", "retail"):
                         markets += 1
-
-                if dist <= 500:
                     if highway == "bus_stop" or public_transport == "platform":
                         bus_stops += 1
                     if amenity == "place_of_worship":
@@ -545,7 +550,7 @@ class GeoFeatureExtractor:
     ) -> CompetitionInfo:
         """Fetch competition landscape.
 
-        Resolves dynamically using OpenStreetMap shop listings when in precise mode.
+        Resolves dynamically using OpenStreetMap shop listings when in precise mode (up to 300m).
         """
         if not self._use_mock and self._raw_data:
             kirana_count_500m = 0
@@ -567,13 +572,12 @@ class GeoFeatureExtractor:
                                 nearest_competitor_m = dist
 
                         if shop in ("convenience", "general", "grocery", "kiosk", "minimarket"):
-                            if dist <= 500:
+                            if dist <= 300: # Capped at 300m
                                 kirana_count_500m += 1
-                            if dist <= 1000:
                                 kirana_count_1km += 1
 
                         if shop in ("supermarket", "department_store"):
-                            if dist <= 2000:
+                            if dist <= 300: # Capped at 300m
                                 supermarket_count += 1
 
             mock_comp = self._fetch_competition_mock(lat, lon, seed)
@@ -652,15 +656,15 @@ class GeoFeatureExtractor:
             # 2. Query OSM Overpass API in a single query across multiple public mirrors
             import requests
 
-            # Clean query with flat indentation for compatibility
+            # Clean query with flat indentation for compatibility, limited to 300m radius of concern
             overpass_query = f"""[out:json][timeout:25];
 (
-  nwr["amenity"~"school|college|university|hospital|clinic|place_of_worship|bank|atm|marketplace"](around:1000, {lat}, {lon});
-  nwr["highway"="bus_stop"](around:500, {lat}, {lon});
-  nwr["public_transport"="platform"](around:500, {lat}, {lon});
-  nwr["shop"~"mall|supermarket|convenience|general|grocery|department_store|kiosk|minimarket"](around:2000, {lat}, {lon});
+  nwr["amenity"~"school|college|university|hospital|clinic|place_of_worship|bank|atm|marketplace"](around:300, {lat}, {lon});
+  nwr["highway"="bus_stop"](around:300, {lat}, {lon});
+  nwr["public_transport"="platform"](around:300, {lat}, {lon});
+  nwr["shop"~"mall|supermarket|convenience|general|grocery|department_store|kiosk|minimarket"](around:300, {lat}, {lon});
   way["highway"](around:100, {lat}, {lon});
-  nwr["building"](around:1000, {lat}, {lon});
+  nwr["building"](around:300, {lat}, {lon});
 );
 out center;"""
 
